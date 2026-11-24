@@ -94,3 +94,10 @@ Sources/InboxCore/EnergyPolicy.swift@@@guard newPolicy != policy else { return }
 Sources/InboxCore/OAuth.swift@@@request.httpBody = Data(FormEncoding.encode([("token", token)]).utf8)@@@request.httpBody = Data(FormEncoding.encode([("access_token", token)]).utf8)@@@revokePostsTheRefreshTokenToGoogle
 Sources/InboxCore/OAuth.swift@@@return await OAuth.revoke(token: refreshToken, transport: transport)@@@return await OAuth.revoke(token: access?.value ?? "", transport: transport)@@@revokePostsTheRefreshTokenToGoogle
 Sources/InboxCore/OAuth.swift@@@return status == 200<NL>    }@@@return true<NL>    }@@@revokeReportsFailureWithoutThrowing
+Sources/InboxCore/Models.swift@@@case ..<3600: return "\(Int(s / 60))m"@@@case ..<3700: return "\(Int(s / 60))m"@@@ageFormatBoundaries
+Sources/InboxCore/Models.swift@@@case ..<60: return "now"@@@case ..<61: return "now"@@@ageFormatBoundaries
+Sources/InboxCore/Models.swift@@@case ..<604800: return "\(Int(s / 86400))d"@@@case ..<604801: return "\(Int(s / 86400))d"@@@ageFormatBoundaries
+Sources/InboxCore/KeychainStore.swift@@@for item in legacy { try? deleteItem(item.itemAccount) }@@@for _ in legacy { }@@@legacyPerAccountItemsMigrateIntoTheSingleItem
+Sources/InboxCore/KeychainStore.swift@@@for item in legacy where !accounts.contains(where: { $0.email == item.account.email }) { accounts.append(item.account) }@@@for item in legacy where false { accounts.append(item.account) }@@@legacyPerAccountItemsMigrateIntoTheSingleItem
+Sources/InboxCore/KeychainStore.swift@@@if accounts.isEmpty { try deleteItem(Self.bundleAccount); return }@@@if accounts.isEmpty { return }@@@removingTheLastAccountRemovesTheItem
+Sources/InboxCore/KeychainStore.swift@@@try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(accounts))@@@try writeItem(account: accounts[0].email, data: try JSONEncoder().encode(accounts))@@@everyAccountLivesInOneKeychainItem

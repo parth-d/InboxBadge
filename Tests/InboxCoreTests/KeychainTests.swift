@@ -72,4 +72,33 @@ struct KeychainTests {
         try one.save(account("a@x.com"))
         #expect(try two.loadAll().isEmpty)
     }
+
+    @Test func everyAccountLivesInOneKeychainItem() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        for email in ["a@x.com", "b@x.com", "c@x.com"] { try store.save(account(email)) }
+        #expect(try store.itemAccounts() == ["accounts"])
+        #expect(try store.loadAll().count == 3)
+    }
+
+    @Test func legacyPerAccountItemsMigrateIntoTheSingleItem() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        try store.addLegacyItem(account("a@x.com", refresh: "ra"))
+        try store.addLegacyItem(account("b@x.com", refresh: "rb"))
+        #expect(try store.itemAccounts() == ["a@x.com", "b@x.com"])
+        let loaded = try store.loadAll()
+        #expect(Set(loaded.map(\.email)) == ["a@x.com", "b@x.com"])
+        #expect(try store.itemAccounts() == ["accounts"])
+        let again = try store.loadAll()
+        #expect(Set(again.map(\.refreshToken)) == ["ra", "rb"])
+    }
+
+    @Test func removingTheLastAccountRemovesTheItem() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        try store.save(account("a@x.com"))
+        try store.delete(email: "a@x.com")
+        #expect(try store.itemAccounts().isEmpty)
+    }
 }

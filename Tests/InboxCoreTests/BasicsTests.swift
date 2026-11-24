@@ -55,4 +55,18 @@ struct BasicsTests {
         #expect(GmailLinks.inbox(email: "me@gmail.com").absoluteString
                 == "https://mail.google.com/mail/?authuser=me%40gmail.com#inbox")
     }
+
+    @Test func ageFormatBoundaries() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        func age(_ seconds: Double) -> String { AgeFormat.short(now.addingTimeInterval(-seconds), now: now) }
+        #expect(age(-30) == "now")
+        #expect(age(59) == "now")
+        #expect(age(60) == "1m")
+        #expect(age(3599) == "59m")
+        #expect(age(3600) == "1h")
+        #expect(age(86399) == "23h")
+        #expect(age(86400) == "1d")
+        #expect(age(604799) == "6d")
+        #expect(age(604800) == "1w")
+    }
 }

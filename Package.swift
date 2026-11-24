@@ -9,7 +9,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "InboxCore"),
-        .executableTarget(name: "InboxBadge", dependencies: ["InboxCore"]),
+        .target(name: "InboxUI", dependencies: ["InboxCore"]),
+        .executableTarget(name: "InboxBadge", dependencies: ["InboxCore", "InboxUI"]),
+        .executableTarget(name: "InboxPreview", dependencies: ["InboxCore", "InboxUI"]),
         .testTarget(name: "InboxCoreTests", dependencies: ["InboxCore"]),
     ],
     swiftLanguageModes: [.v5]

@@ -2,23 +2,9 @@ import AppKit
 import Observation
 import os
 import InboxCore
+import InboxUI
 
 let log = Logger(subsystem: "io.github.parth-d.InboxBadge", category: "app")
-
-enum AccountStatus: Equatable {
-    case starting
-    case ok
-    case reauthRequired
-    case error(String)
-}
-
-struct AccountView: Identifiable, Equatable {
-    let email: String
-    var unread = 0
-    var threads: [UnreadThread] = []
-    var status: AccountStatus = .starting
-    var id: String { email }
-}
 
 @MainActor
 @Observable
@@ -28,6 +14,11 @@ final class AppModel {
     var signInError: String?
     var showImporter = false
     private(set) var openAtLogin = LoginItem.isEnabled
+    private(set) var soundName: String = UserDefaults.standard.string(forKey: "notificationSound") ?? "None"
+    static let soundChoices: [String] = {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: "/System/Library/Sounds")) ?? []
+        return names.filter { $0.hasSuffix(".aiff") }.map { String($0.dropLast(5)) }.sorted()
+    }()
     var loginItemError: String?
     var notificationsEnabled: Bool = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true {
         didSet { UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled") }
@@ -76,6 +67,7 @@ final class AppModel {
         }
         do {
             for account in try store.loadAll() { startRuntime(for: account) }
+            sortByStoredOrder()
         } catch {
             log.error("keychain load failed: \(String(describing: error), privacy: .public)")
         }
@@ -108,6 +100,7 @@ final class AppModel {
             try store.save(account)
             if let old = runtimes[account.email] { await old.loop.stop() }
             startRuntime(for: account)
+            sortByStoredOrder()
             if !UserDefaults.standard.bool(forKey: "loginItemConfigured") {
                 UserDefaults.standard.set(true, forKey: "loginItemConfigured")
                 setOpenAtLogin(true)
@@ -126,6 +119,8 @@ final class AppModel {
             log.info("token revoked=\(revoked)")
         }
         accounts.removeAll { $0.email == email }
+        UserDefaults.standard.removeObject(forKey: Self.labelKey(email))
+        UserDefaults.standard.set(accounts.map(\.email), forKey: "accountOrder")
         try? store.delete(email: email)
         if accounts.isEmpty { storedClient = nil }
     }
@@ -144,6 +139,34 @@ final class AppModel {
         }
         openAtLogin = LoginItem.isEnabled
         log.info("login item enabled=\(self.openAtLogin)")
+    }
+
+    func setLabel(_ label: String, for email: String) {
+        guard let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        accounts[i].label = label
+        UserDefaults.standard.set(label, forKey: Self.labelKey(email))
+    }
+
+    func move(_ email: String, by offset: Int) {
+        guard let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        let j = i + offset
+        guard accounts.indices.contains(j) else { return }
+        accounts.swapAt(i, j)
+        UserDefaults.standard.set(accounts.map(\.email), forKey: "accountOrder")
+    }
+
+    func setSound(_ name: String) {
+        soundName = name
+        UserDefaults.standard.set(name, forKey: "notificationSound")
+        if name != "None" { NSSound(named: NSSound.Name(name))?.play() }
+    }
+
+    private nonisolated static func labelKey(_ email: String) -> String { "label.\(email)" }
+
+    private func sortByStoredOrder() {
+        let order = UserDefaults.standard.stringArray(forKey: "accountOrder") ?? []
+        accounts.sort { (order.firstIndex(of: $0.email) ?? Int.max) < (order.firstIndex(of: $1.email) ?? Int.max) }
+        UserDefaults.standard.set(accounts.map(\.email), forKey: "accountOrder")
     }
 
     func openSettings() {
@@ -218,7 +241,7 @@ final class AppModel {
             }
         }
         runtimes[email] = Runtime(tokens: tokens, client: client, poller: poller, loop: loop)
-        if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email)) }
+        if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email, label: UserDefaults.standard.string(forKey: Self.labelKey(email)) ?? "")) }
         Task { await loop.start() }
     }
 
@@ -234,6 +257,7 @@ final class AppModel {
         let plan = NotificationPlan.newMail(mail, email: email)
         if !plan.isEmpty { log.info("posting \(plan.count) notification(s) for \(mail.count) new message(s)") }
         for notification in plan { notifications.post(notification) }
+        if !plan.isEmpty, soundName != "None" { NSSound(named: NSSound.Name(soundName))?.play() }
     }
 
     private func setStatus(_ status: AccountStatus, for email: String) {

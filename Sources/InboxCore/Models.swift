@@ -117,3 +117,16 @@ public enum GmailLinks {
         URL(string: "https://mail.google.com/mail/?authuser=\(FormEncoding.escape(email))#inbox")!
     }
 }
+
+public enum AgeFormat {
+    public static func short(_ date: Date, now: Date) -> String {
+        let s = max(0, now.timeIntervalSince(date))
+        switch s {
+        case ..<60: return "now"
+        case ..<3600: return "\(Int(s / 60))m"
+        case ..<86400: return "\(Int(s / 3600))h"
+        case ..<604800: return "\(Int(s / 86400))d"
+        default: return "\(Int(s / 604800))w"
+        }
+    }
+}

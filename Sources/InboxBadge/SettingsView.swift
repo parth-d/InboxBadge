@@ -1,5 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import InboxCore
+import InboxUI
 
 struct SettingsView: View {
     let model: AppModel
@@ -15,17 +17,17 @@ struct SettingsView: View {
                     Text("10 minutes").tag(600.0)
                 }
                 Toggle("Notify about new mail", isOn: Binding(get: { model.notificationsEnabled }, set: { model.notificationsEnabled = $0 }))
+                Picker("Notification sound", selection: Binding(get: { model.soundName }, set: { model.setSound($0) })) {
+                    Text("None").tag("None")
+                    ForEach(AppModel.soundChoices, id: \.self) { Text($0).tag($0) }
+                }
                 Toggle("Open at login", isOn: Binding(get: { model.openAtLogin }, set: { model.setOpenAtLogin($0) }))
                 if let error = model.loginItemError { Text(error).font(.caption).foregroundStyle(.red) }
             }
             Section("Accounts") {
                 if model.accounts.isEmpty { Text("No accounts yet.").foregroundStyle(.secondary) }
-                ForEach(model.accounts) { account in
-                    HStack {
-                        Text(account.email)
-                        Spacer()
-                        Button("Remove", role: .destructive) { Task { await model.removeAccount(account.email) } }
-                    }
+                ForEach(Array(model.accounts.enumerated()), id: \.element.id) { index, account in
+                    AccountRow(model: model, account: account, isFirst: index == 0, isLast: index == model.accounts.count - 1)
                 }
                 HStack {
                     Button(model.hasClient ? "Add account (same Google client)…" : "Add account…") {
@@ -47,13 +49,40 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 420)
-        .fileImporter(isPresented: Binding(get: { model.showImporter }, set: { model.showImporter = $0 }), allowedContentTypes: [.json]) { result in
+        .frame(width: 520, height: 560)
+        .fileImporter(isPresented: Binding(get: { model.showImporter }, set: { model.showImporter = $0 }),
+                      allowedContentTypes: [.json]) { result in
             guard case .success(let url) = result else { return }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url) else { return }
             model.startSignIn(clientJSON: data)
         }
+    }
+}
+
+private struct AccountRow: View {
+    let model: AppModel
+    let account: AccountView
+    let isFirst: Bool
+    let isLast: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("Label", text: Binding(get: { account.label }, set: { model.setLabel($0, for: account.email) }),
+                          prompt: Text("Add a label"))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                Text(account.email).font(.caption).foregroundStyle(.secondary)
+            }
+            Button { model.move(account.email, by: -1) } label: { Image(systemName: "chevron.up") }
+                .disabled(isFirst).help("Move up")
+            Button { model.move(account.email, by: 1) } label: { Image(systemName: "chevron.down") }
+                .disabled(isLast).help("Move down")
+            Button(role: .destructive) { Task { await model.removeAccount(account.email) } } label: { Image(systemName: "trash") }
+                .help("Remove this account")
+        }
+        .buttonStyle(.borderless)
     }
 }
