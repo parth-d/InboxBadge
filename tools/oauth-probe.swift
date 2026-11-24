@@ -150,6 +150,13 @@ let (lStatus, label) = gmail("labels/INBOX")
 guard lStatus == 200 else { fail("labels.get failed: HTTP \(lStatus)") }
 print("INBOX threadsUnread: \(label["threadsUnread"] ?? "?")  threadsTotal: \(label["threadsTotal"] ?? "?")")
 
+for l in ["CATEGORY_PERSONAL", "CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL", "CATEGORY_UPDATES", "CATEGORY_FORUMS", "UNREAD", "SPAM", "TRASH"] {
+    let (s, obj) = gmail("labels/\(l)")
+    print("\(l) threadsUnread: \(s == 200 ? "\(obj["threadsUnread"] ?? "?")" : "HTTP \(s)")")
+}
+let (uStatus, unreadInbox) = gmail("threads?labelIds=INBOX&labelIds=UNREAD&maxResults=5")
+print("threads.list INBOX+UNREAD: HTTP \(uStatus), \((unreadInbox["threads"] as? [[String: Any]])?.count ?? 0) thread(s)")
+
 let (tStatus, list) = gmail("threads?labelIds=INBOX&maxResults=1")
 guard tStatus == 200, let first = (list["threads"] as? [[String: Any]])?.first, let threadId = first["id"] as? String
 else { fail("no inbox thread found (HTTP \(tStatus))") }
@@ -158,6 +165,7 @@ guard gStatus == 200 else { fail("threads.get failed: HTTP \(gStatus)") }
 let headers = ((thread["messages"] as? [[String: Any]])?.last?["payload"] as? [String: Any])?["headers"] as? [[String: Any]] ?? []
 let messageID = headers.first { ($0["name"] as? String)?.lowercased() == "message-id" }?["value"] as? String
 
+if ProcessInfo.processInfo.environment["PROBE_NO_LINKS"] != nil { print("counts only; skipping deep links"); exit(0) }
 var links = [
     "https://mail.google.com/mail/?authuser=\(enc(email))#inbox/\(threadId)",
     "https://mail.google.com/mail/u/\(enc(email))/#inbox/\(threadId)",
