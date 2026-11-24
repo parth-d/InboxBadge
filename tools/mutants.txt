@@ -60,7 +60,7 @@ Sources/InboxCore/Loopback.swift@@@throw InboxError.authorization(error)@@@throw
 Sources/InboxCore/Loopback.swift@@@try await Task.sleep(for: .seconds(timeout))@@@try await Task.sleep(for: .seconds(3600))@@@signInTimesOut
 Sources/InboxCore/Loopback.swift@@@parameters.requiredInterfaceType = .loopback@@@_ = parameters@@@listenerIsNotReachableOnNonLoopbackInterfaces
 Sources/InboxCore/Loopback.swift@@@if let error = params["error"] {@@@if false, let error = params["error"] {@@@signInSurfacesAuthorizationError
-Sources/InboxCore/GmailClient.swift@@@("historyTypes", "messageAdded"), ("historyTypes", "messageDeleted"),@@@("historyTypes", "messageDeleted"),@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
+Sources/InboxCore/GmailClient.swift@@@("historyTypes", "messageAdded"), ("historyTypes", "messageDeleted"),@@@("historyTypes", "messageDeleted"),@@@historyUnchangedWhenNoRecords
 Sources/InboxCore/GmailClient.swift@@@seen.insert(id).inserted else { continue }@@@true else { continue }@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
 Sources/InboxCore/GmailClient.swift@@@pageToken = o["nextPageToken"] as? String<NL>            if pageToken == nil { break }<NL>        }<NL>        return any@@@pageToken = nil<NL>            if pageToken == nil { break }<NL>        }<NL>        return any@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
 Sources/InboxCore/GmailClient.swift@@@body: ["removeLabelIds": ["UNREAD"]])<NL>    }<NL><NL>    public func trash@@@body: ["removeLabelIds": ["INBOX"]])<NL>    }<NL><NL>    public func trash@@@markReadRemovesUnreadLabelFromTheThread
@@ -84,7 +84,8 @@ Sources/InboxCore/NotificationPlan.swift@@@identifier: "reauth.\(email)"@@@ident
 Sources/InboxCore/KeychainStore.swift@@@listing[kSecReturnAttributes as String] = true@@@listing[kSecReturnData as String] = true@@@savedAccountsRoundTripAndSurviveANewStoreInstance
 Sources/InboxCore/KeychainStore.swift@@@if update == errSecSuccess { return }@@@if false { return }@@@savingTheSameEmailReplacesTheEntry
 Sources/InboxCore/KeychainStore.swift@@@kSecAttrService as String: service]@@@kSecAttrService as String: "shared"]@@@storesWithDifferentServicesAreIsolated
-Sources/InboxCore/KeychainStore.swift@@@if let email { query[kSecAttrAccount as String] = email }@@@_ = email@@@deleteRemovesOnlyThatAccountAndIsIdempotent
+Sources/InboxCore/KeychainStore.swift@@@if let email { query[kSecAttrAccount as String] = email }@@@_ = email@@@savingTheSameEmailReplacesTheEntry
+Sources/InboxCore/KeychainStore.swift@@@let status = SecItemDelete(base(email) as CFDictionary)@@@let status = SecItemDelete(base() as CFDictionary)@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else@@@guard status == 200 else@@@noContentResponseCountsAsSuccess
 Sources/InboxCore/Loopback.swift@@@} onCancel: {<NL>            listener.cancel()<NL>        }@@@} onCancel: {<NL>        }@@@signInStopsWhenItsTaskIsCancelled

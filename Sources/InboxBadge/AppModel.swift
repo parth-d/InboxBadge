@@ -107,7 +107,7 @@ final class AppModel {
     }
 
     func checkNow() async {
-        for email in runtimes.keys { await resyncAccount(email) }
+        await pokeAll()
     }
 
     func openSettings() {
@@ -151,6 +151,7 @@ final class AppModel {
 
     private func resyncAccount(_ email: String) async {
         guard let runtime = runtimes[email] else { return }
+        log.info("resync after failed action")
         do {
             if let snapshot = try await runtime.poller.resync() { apply(snapshot, to: email) }
             setStatus(.ok, for: email)

@@ -26,7 +26,10 @@ public actor AccountPoller {
     }
 
     public func tick() async throws -> TickResult {
-        guard let known = historyId else { return TickResult(snapshot: try await resync()) }
+        guard let known = historyId else {
+            coreLog.info("tick: no cursor, baseline")
+            return TickResult(snapshot: try await resync())
+        }
         switch try await client.history(since: known) {
         case .unchanged(let id):
             historyId = id
@@ -38,6 +41,7 @@ public actor AccountPoller {
             historyId = id
             return TickResult(snapshot: emit(snapshot), newMail: fresh)
         case .expired:
+            coreLog.info("tick: history expired, resync without notifications")
             return TickResult(snapshot: try await resync())
         }
     }

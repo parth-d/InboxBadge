@@ -174,7 +174,10 @@ struct GmailClientTests {
         #expect(batches.map { ($0["ids"] as! [String]).count } == [1000, 1000, 500])
         #expect(batches.allSatisfy { $0["removeLabelIds"] as? [String] == ["UNREAD"] })
         #expect(batches[0]["ids"] as? [String] == (0..<1000).map { "m\($0)" })
-        #expect(t.requests.filter { $0.httpMethod == "GET" }.count == 5)
+        let gets = t.requests.filter { $0.httpMethod == "GET" }
+        #expect(gets.count == 5)
+        let first = URLComponents(url: gets[0].url!, resolvingAgainstBaseURL: false)!.queryItems!
+        #expect(first.first { $0.name == "maxResults" }?.value == "500")
     }
 
     @Test func markAllReadWithNothingUnreadSendsNoBatch() async throws {
