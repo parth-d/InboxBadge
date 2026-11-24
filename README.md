@@ -5,8 +5,8 @@ A small, battery-light macOS menu-bar app that shows your unread Gmail count for
 - Per-account unread count and the newest unread threads in the popover; click one to open it in your default browser, in the right account.
 - Native notifications for new mail with **Mark as read** and **Delete** buttons (more than three new messages in one check become one summary).
 - **Mark as read**, **Delete** (to Trash, recoverable in Gmail for 30 days) and **Mark all as read** from the popover.
-- Several accounts (personal and Google Workspace), each with its own sign-in.
-- Open at login, check interval (30 s to 10 min), notifications on or off.
+- Several accounts (personal and Google Workspace), each with its own sign-in, a label you choose, and an order you set.
+- Open at login, check interval (30 s to 10 min), notifications on or off, an optional notification sound (any macOS system sound).
 - Apple frameworks only, no third-party dependencies. MIT licensed.
 
 InboxBadge talks to the Gmail API directly from your Mac. It has no server, no analytics and no account of its own; see [the privacy policy](docs/privacy.md).
@@ -47,13 +47,14 @@ Signing: `make app` uses a self-signed identity if one exists, otherwise an ad-h
 ## Troubleshooting
 
 - **No notifications**: System Settings → Notifications → InboxBadge → Allow. macOS asks only once.
+- **Keychain asks for your password after you rebuild**: choose Always Allow. macOS ties the permission to the exact build, so each rebuild asks once (one item holds all accounts). A downloaded or unchanged build asks once.
 - **"Sign in again"**: the refresh token is gone (password change, access revoked, or the 7-day Testing expiry). Remove the account in Settings and add it again.
 - **Settings → Open at login is greyed or flips back**: approve it under System Settings → General → Login Items.
 - **Count differs from Gmail's sidebar**: the count is the Inbox label's unread thread count, the same figure Gmail shows; Spam and Trash are not included.
 
 ## Layout
 
-`Sources/InboxCore` all logic (OAuth, Gmail client, poller, energy policy, notification plan, Keychain store), unit tested; `Sources/InboxBadge` the SwiftUI shell; `tools/` the OAuth probe, mutation check, signing and energy scripts; `docs/` the web pages Google's consent screen links to.
+`Sources/InboxCore` all logic (OAuth, Gmail client, poller, energy policy, notification plan, Keychain store), unit tested; `Sources/InboxUI` the popover view; `Sources/InboxPreview` renders the popover to PNG files for design work (`swift run InboxPreview <dir>`; buttons and menus appear as placeholder glyphs there); `Sources/InboxBadge` the app shell (menu-bar item, Settings, notifications); `tools/` the OAuth probe, mutation check, signing and energy scripts; `docs/` the web pages Google's consent screen links to.
 
 `tools/mutation-check.sh` applies each seeded fault in `tools/mutants.txt` to a throwaway copy and requires the named test to fail.
 

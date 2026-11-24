@@ -18,6 +18,7 @@ It does not read message bodies or attachments, send mail, or permanently delete
 
 - Your Google refresh token, and the OAuth client ID and secret you supplied, are stored in the macOS Keychain on your Mac, readable only by InboxBadge, on this device only.
 - Sender, subject and counts are held in memory while the app runs. They are not written to disk by InboxBadge. macOS itself may keep the text of a notification in Notification Center.
+- Labels you give accounts, their order and your settings are stored in the app's preferences on your Mac.
 - The app's log contains counts and status messages, never mail content or addresses.
 
 ## Where data is sent
