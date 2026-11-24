@@ -52,6 +52,7 @@ final class AppModel {
 
     @ObservationIgnored private let notifications = NotificationRouter()
     @ObservationIgnored private let settingsWindow = SettingsWindow()
+    @ObservationIgnored private let soundPlayer = SoundPlayer()
     @ObservationIgnored private var launchObserver: NSObjectProtocol?
 
     struct Runtime {
@@ -168,7 +169,7 @@ final class AppModel {
     func setSound(_ name: String) {
         soundName = name
         UserDefaults.standard.set(name, forKey: "notificationSound")
-        if name != "None" { NSSound(named: NSSound.Name(name))?.play() }
+        if name != "None" { soundPlayer.play(name) }
     }
 
     private nonisolated static func labelKey(_ email: String) -> String { "label.\(email)" }
@@ -304,7 +305,7 @@ final class AppModel {
         let plan = NotificationPlan.newMail(mail, email: email)
         if !plan.isEmpty { log.info("posting \(plan.count) notification(s) for \(mail.count) new message(s)") }
         for notification in plan { notifications.post(notification) }
-        if !plan.isEmpty, soundName != "None" { NSSound(named: NSSound.Name(soundName))?.play() }
+        if !plan.isEmpty, soundName != "None" { soundPlayer.play(soundName) }
     }
 
     private func setStatus(_ status: AccountStatus, for email: String) {
