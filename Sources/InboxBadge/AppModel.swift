@@ -13,6 +13,13 @@ final class AppModel {
     private(set) var isSigningIn = false
     var signInError: String?
     var showImporter = false
+    var showSpam: Bool = UserDefaults.standard.bool(forKey: "showSpam") {
+        didSet {
+            UserDefaults.standard.set(showSpam, forKey: "showSpam")
+            if showSpam { for email in runtimes.keys { Task { await refreshSpam(email) } } }
+            else { for i in accounts.indices { accounts[i].spam = nil } }
+        }
+    }
     private(set) var openAtLogin = LoginItem.isEnabled
     private(set) var soundName: String = UserDefaults.standard.string(forKey: "notificationSound") ?? "None"
     static let soundChoices: [String] = {
@@ -65,6 +72,7 @@ final class AppModel {
             forName: NSApplication.didFinishLaunchingNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.notifications.start() }
         }
+        storedClient = try? store.loadClient()
         do {
             for account in try store.loadAll() { startRuntime(for: account) }
             sortByStoredOrder()
@@ -91,8 +99,11 @@ final class AppModel {
         defer { isSigningIn = false }
         do {
             let client: OAuthClient
-            if let clientJSON { client = try OAuthClient.fromGoogleJSON(clientJSON) }
-            else if let storedClient { client = storedClient }
+            if let clientJSON {
+                client = try OAuthClient.fromGoogleJSON(clientJSON)
+                try store.saveClient(client)
+                storedClient = client
+            } else if let storedClient { client = storedClient }
             else { throw InboxError.malformed("client json") }
             let account = try await SignIn.run(client: client, transport: transport) { url in
                 Task { @MainActor in NSWorkspace.shared.open(url) }
@@ -122,7 +133,6 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: Self.labelKey(email))
         UserDefaults.standard.set(accounts.map(\.email), forKey: "accountOrder")
         try? store.delete(email: email)
-        if accounts.isEmpty { storedClient = nil }
     }
 
     func checkNow() async {
@@ -171,6 +181,43 @@ final class AppModel {
 
     func openSettings() {
         settingsWindow.show(model: self)
+    }
+
+    func popoverWillOpen() {
+        guard showSpam else { return }
+        for email in runtimes.keys { Task { await refreshSpam(email) } }
+    }
+
+    func refreshSpam(_ email: String) async {
+        guard showSpam, let runtime = runtimes[email] else { return }
+        let summary = try? await runtime.client.spamSummary()
+        if let i = accounts.firstIndex(where: { $0.email == email }), accounts[i].spam != summary { accounts[i].spam = summary }
+    }
+
+    func markSpamRead(email: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        accounts[i].spam?.unread = 0
+        Task {
+            await perform("Could not mark spam as read", email: email) { _ = try await runtime.client.markSpamRead() }
+            await refreshSpam(email)
+        }
+    }
+
+    func trashSpam(email: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        let count = accounts[i].spam?.total ?? 0
+        let alert = NSAlert()
+        alert.messageText = "Move all spam in \(accounts[i].title) to Trash?"
+        alert.informativeText = "\(count) spam conversation\(count == 1 ? "" : "s") will be moved to Trash. Gmail keeps them there for 30 days."
+        alert.addButton(withTitle: "Move to Trash")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        accounts[i].spam = SpamSummary(unread: 0, total: 0)
+        Task {
+            await perform("Could not move spam to Trash", email: email) { _ = try await runtime.client.trashSpam() }
+            await refreshSpam(email)
+        }
     }
 
     func markRead(email: String, threadId: String) {

@@ -31,7 +31,7 @@ struct EnergyTests {
     }
 
     @Test func intervalNeverBelowMinimum() {
-        #expect(EnergyPolicy(baseInterval: 5).interval(displaysAsleep: false, lowPower: false, failures: 0) == 30)
+        #expect(EnergyPolicy(baseInterval: 5).interval(displaysAsleep: false, lowPower: false, failures: 0) == 15)
     }
 
     @Test func toleranceIsAtLeastFifteenPercent() {

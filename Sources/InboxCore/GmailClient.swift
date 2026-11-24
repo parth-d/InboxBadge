@@ -141,10 +141,30 @@ public struct GmailClient: Sendable {
 
     @discardableResult
     public func markAllRead() async throws -> Int {
+        try await bulkModify(labels: ["INBOX", "UNREAD"], add: [], remove: ["UNREAD"])
+    }
+
+    public func spamSummary() async throws -> SpamSummary {
+        let o = try await get("labels/SPAM")
+        return SpamSummary(unread: o["threadsUnread"] as? Int ?? 0, total: o["threadsTotal"] as? Int ?? 0)
+    }
+
+    @discardableResult
+    public func markSpamRead() async throws -> Int {
+        try await bulkModify(labels: ["SPAM", "UNREAD"], add: [], remove: ["UNREAD"])
+    }
+
+    @discardableResult
+    public func trashSpam() async throws -> Int {
+        try await bulkModify(labels: ["SPAM"], add: ["TRASH"], remove: ["SPAM", "UNREAD"])
+    }
+
+    private func bulkModify(labels: [String], add: [String], remove: [String]) async throws -> Int {
         var ids: [String] = []
         var pageToken: String?
         for _ in 0..<200 {
-            var query: [(String, String)] = [("labelIds", "INBOX"), ("labelIds", "UNREAD"), ("maxResults", "500")]
+            var query: [(String, String)] = labels.map { ("labelIds", $0) } + [("maxResults", "500")]
+            if labels.contains("SPAM") { query.append(("includeSpamTrash", "true")) }
             if let pageToken { query.append(("pageToken", pageToken)) }
             let o = try await get("messages", query)
             ids += (o["messages"] as? [[String: Any]] ?? []).compactMap { $0["id"] as? String }
@@ -154,7 +174,9 @@ public struct GmailClient: Sendable {
         var index = 0
         while index < ids.count {
             let chunk = Array(ids[index..<min(index + 1000, ids.count)])
-            _ = try await call("POST", "messages/batchModify", body: ["ids": chunk, "removeLabelIds": ["UNREAD"]])
+            var body: [String: Any] = ["ids": chunk, "removeLabelIds": remove]
+            if !add.isEmpty { body["addLabelIds"] = add }
+            _ = try await call("POST", "messages/batchModify", body: body)
             index += 1000
         }
         return ids.count

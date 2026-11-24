@@ -88,7 +88,19 @@ public enum InboxError: Error, Equatable {
     case authorization(String)
 }
 
+public struct SpamSummary: Equatable, Sendable {
+    public var unread: Int
+    public var total: Int
+
+    public init(unread: Int, total: Int) {
+        self.unread = unread
+        self.total = total
+    }
+}
+
 public protocol SecretStore: Sendable {
+    func loadClient() throws -> OAuthClient?
+    func saveClient(_ client: OAuthClient) throws
     func loadAll() throws -> [StoredAccount]
     func save(_ account: StoredAccount) throws
     func delete(email: String) throws
@@ -111,6 +123,10 @@ public enum SenderName {
 public enum GmailLinks {
     public static func thread(email: String, threadId: String) -> URL {
         URL(string: "https://mail.google.com/mail/?authuser=\(FormEncoding.escape(email))#inbox/\(threadId)")!
+    }
+
+    public static func spam(email: String) -> URL {
+        URL(string: "https://mail.google.com/mail/?authuser=\(FormEncoding.escape(email))#spam")!
     }
 
     public static func inbox(email: String) -> URL {

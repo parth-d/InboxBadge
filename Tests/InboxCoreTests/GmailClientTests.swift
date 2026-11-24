@@ -190,4 +190,58 @@ struct GmailClientTests {
         let t = StubTransport { _ in (Data(), 204) }
         try await makeGmail(t).markRead(threadId: "t1")
     }
+
+    private func batchBodies(_ t: StubTransport) -> [[String: Any]] {
+        t.requests.filter { $0.url!.path.hasSuffix("/batchModify") }.map { try! JSONSerialization.jsonObject(with: $0.httpBody!) as! [String: Any] }
+    }
+
+    private func spamStub(ids: [String]) -> StubTransport {
+        StubTransport { r in
+            if r.url!.path.hasSuffix("/batchModify") { return (Data(), 204) }
+            return (jsonData(ids.isEmpty ? [:] : ["messages": ids.map { ["id": $0, "threadId": "t\($0)"] }]), 200)
+        }
+    }
+
+    @Test func spamSummaryReadsUnreadAndTotal() async throws {
+        let t = StubTransport { _ in (jsonData(["threadsUnread": 111, "threadsTotal": 250]), 200) }
+        let summary = try await makeGmail(t).spamSummary()
+        #expect(summary == SpamSummary(unread: 111, total: 250))
+        #expect(t.requests[0].url!.path.hasSuffix("/labels/SPAM"))
+    }
+
+    @Test func markSpamReadListsUnreadSpamIncludingSpamFolderAndRemovesUnread() async throws {
+        let t = spamStub(ids: ["a", "b"])
+        #expect(try await makeGmail(t).markSpamRead() == 2)
+        let query = URLComponents(url: t.requests[0].url!, resolvingAgainstBaseURL: false)!.queryItems!
+        #expect(query.filter { $0.name == "labelIds" }.compactMap(\.value).sorted() == ["SPAM", "UNREAD"])
+        #expect(query.first { $0.name == "includeSpamTrash" }?.value == "true")
+        let body = batchBodies(t)
+        #expect(body.count == 1)
+        #expect(body[0]["ids"] as? [String] == ["a", "b"])
+        #expect(body[0]["removeLabelIds"] as? [String] == ["UNREAD"])
+        #expect(body[0]["addLabelIds"] == nil)
+    }
+
+    @Test func trashSpamMovesEverySpamMessageToTrash() async throws {
+        let t = spamStub(ids: ["a"])
+        #expect(try await makeGmail(t).trashSpam() == 1)
+        let query = URLComponents(url: t.requests[0].url!, resolvingAgainstBaseURL: false)!.queryItems!
+        #expect(query.filter { $0.name == "labelIds" }.compactMap(\.value) == ["SPAM"])
+        let body = batchBodies(t)[0]
+        #expect(body["addLabelIds"] as? [String] == ["TRASH"])
+        #expect(Set(body["removeLabelIds"] as? [String] ?? []) == ["SPAM", "UNREAD"])
+    }
+
+    @Test func emptySpamSendsNoBatch() async throws {
+        let t = spamStub(ids: [])
+        #expect(try await makeGmail(t).trashSpam() == 0)
+        #expect(batchBodies(t).isEmpty)
+    }
+
+    @Test func inboxBulkReadDoesNotAskForSpamFolders() async throws {
+        let t = spamStub(ids: ["a"])
+        try await makeGmail(t).markAllRead()
+        let query = URLComponents(url: t.requests[0].url!, resolvingAgainstBaseURL: false)!.queryItems!
+        #expect(query.first { $0.name == "includeSpamTrash" } == nil)
+    }
 }

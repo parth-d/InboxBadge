@@ -13,6 +13,9 @@ struct PopoverView: View {
             trash: { model.trash(email: $0, threadId: $1) },
             markAllRead: { model.markAllRead(email: $0) },
             openInbox: { NSWorkspace.shared.open(GmailLinks.inbox(email: $0)) },
+            openSpam: { NSWorkspace.shared.open(GmailLinks.spam(email: $0)) },
+            markSpamRead: { model.markSpamRead(email: $0) },
+            trashSpam: { model.trashSpam(email: $0) },
             checkNow: { Task { await model.checkNow() } },
             openSettings: { model.openSettings() },
             quit: { NSApp.terminate(nil) }))

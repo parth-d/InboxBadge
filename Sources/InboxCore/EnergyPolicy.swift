@@ -6,7 +6,7 @@ public protocol PollEnvironment: Sendable {
 }
 
 public struct EnergyPolicy: Equatable, Sendable {
-    public static let minimumInterval: TimeInterval = 30
+    public static let minimumInterval: TimeInterval = 15
     public static let toleranceFraction = 0.2
 
     public var baseInterval: TimeInterval

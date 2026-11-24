@@ -54,6 +54,8 @@ struct BasicsTests {
                 == "https://mail.google.com/mail/?authuser=me%40gmail.com#inbox/abc")
         #expect(GmailLinks.inbox(email: "me@gmail.com").absoluteString
                 == "https://mail.google.com/mail/?authuser=me%40gmail.com#inbox")
+        #expect(GmailLinks.spam(email: "me@gmail.com").absoluteString
+                == "https://mail.google.com/mail/?authuser=me%40gmail.com#spam")
     }
 
     @Test func ageFormatBoundaries() {

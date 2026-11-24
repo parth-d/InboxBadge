@@ -94,11 +94,32 @@ struct KeychainTests {
         #expect(Set(again.map(\.refreshToken)) == ["ra", "rb"])
     }
 
-    @Test func removingTheLastAccountRemovesTheItem() throws {
+    @Test func theGoogleClientSurvivesRemovingEveryAccount() throws {
         let kc = try TempKeychain()
         let store = kc.store()
         try store.save(account("a@x.com"))
         try store.delete(email: "a@x.com")
-        #expect(try store.itemAccounts().isEmpty)
+        #expect(try store.loadAll().isEmpty)
+        #expect(try store.loadClient() == OAuthClient(clientID: "cid", clientSecret: "sec"))
+    }
+
+    @Test func savedClientIsReturnedBeforeAnyAccountExists() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        #expect(try store.loadClient() == nil)
+        let client = OAuthClient(clientID: "imported", clientSecret: "s")
+        try store.saveClient(client)
+        #expect(try store.loadClient() == client)
+        #expect(try store.loadAll().isEmpty)
+        try store.save(account("a@x.com"))
+        #expect(try store.loadClient() == client)
+    }
+
+    @Test func aBundleWrittenAsABareAccountListStillLoads() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        try store.addLegacyBundle([account("a@x.com", refresh: "ra")])
+        #expect(try store.loadAll().map(\.refreshToken) == ["ra"])
+        #expect(try store.loadClient() == OAuthClient(clientID: "cid", clientSecret: "sec"))
     }
 }

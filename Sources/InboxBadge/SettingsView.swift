@@ -10,6 +10,7 @@ struct SettingsView: View {
         Form {
             Section("General") {
                 Picker("Check for mail every", selection: Binding(get: { model.pollInterval }, set: { model.pollInterval = $0 })) {
+                    Text("15 seconds").tag(15.0)
                     Text("30 seconds").tag(30.0)
                     Text("1 minute").tag(60.0)
                     Text("2 minutes").tag(120.0)
@@ -21,6 +22,7 @@ struct SettingsView: View {
                     Text("None").tag("None")
                     ForEach(AppModel.soundChoices, id: \.self) { Text($0).tag($0) }
                 }
+                Toggle("Show a spam section for each account", isOn: Binding(get: { model.showSpam }, set: { model.showSpam = $0 }))
                 Toggle("Open at login", isOn: Binding(get: { model.openAtLogin }, set: { model.setOpenAtLogin($0) }))
                 if let error = model.loginItemError { Text(error).font(.caption).foregroundStyle(.red) }
             }
@@ -29,14 +31,13 @@ struct SettingsView: View {
                 ForEach(Array(model.accounts.enumerated()), id: \.element.id) { index, account in
                     AccountRow(model: model, account: account, isFirst: index == 0, isLast: index == model.accounts.count - 1)
                 }
-                HStack {
-                    Button(model.hasClient ? "Add account (same Google client)…" : "Add account…") {
-                        if model.hasClient { model.startSignIn(clientJSON: nil) } else { model.showImporter = true }
-                    }
-                    .disabled(model.isSigningIn)
-                    if model.hasClient {
-                        Button("Add with another client JSON…") { model.showImporter = true }.disabled(model.isSigningIn)
-                    }
+                Button(model.hasClient ? "Add account…" : "Set up Google access…") {
+                    if model.hasClient { model.startSignIn(clientJSON: nil) } else { model.showImporter = true }
+                }
+                .disabled(model.isSigningIn)
+                if !model.hasClient {
+                    Text("One-time setup: choose the Google OAuth client JSON you downloaded from Google Cloud. InboxBadge keeps it in the Keychain and uses it for every account.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 if model.isSigningIn {
                     HStack {

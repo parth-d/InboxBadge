@@ -14,7 +14,7 @@ let personal = AccountView(
     threads: [thread(1, "Maya Chen <maya@example.org>", "Dinner on Friday? I booked the table at the new place", ageSeconds: 240),
               thread(2, "Bank Alerts <alerts@bank.example>", "Your statement is ready", ageSeconds: 5400),
               thread(3, "\"Okafor, Daniel\" <d@example.net>", "Re: Moving boxes", ageSeconds: 90000)],
-    status: .ok)
+    status: .ok, spam: SpamSummary(unread: 111, total: 250))
 let work = AccountView(
     email: "alex.rivera@company.example", label: "Work", unread: 12,
     threads: [thread(4, "Build Bot <ci@company.example>", "Pipeline failed on main (3 jobs)", ageSeconds: 600),
@@ -24,7 +24,7 @@ let work = AccountView(
               thread(8, "Finance <fin@company.example>", "Expense report approved", ageSeconds: 600000)],
     status: .ok)
 let expired = AccountView(email: "old.mail@example.com", label: "", unread: 0, threads: [], status: .reauthRequired)
-let quiet = AccountView(email: "side@example.com", label: "Side projects", unread: 0, threads: [], status: .ok)
+let quiet = AccountView(email: "side@example.com", label: "Side projects", unread: 0, threads: [], status: .ok, spam: SpamSummary(unread: 0, total: 0))
 
 @MainActor func render(_ scheme: ColorScheme, accounts: [AccountView], to path: String) {
     let background: Color = scheme == .dark ? Color(white: 0.16) : Color(white: 0.96)

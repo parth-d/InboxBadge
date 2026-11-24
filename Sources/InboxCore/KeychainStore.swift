@@ -1,6 +1,11 @@
 import Foundation
 import Security
 
+struct Vault: Codable, Equatable {
+    var accounts: [StoredAccount] = []
+    var client: OAuthClient?
+}
+
 public struct KeychainStore: SecretStore, @unchecked Sendable {
     static let bundleAccount = "accounts"
 
@@ -19,26 +24,40 @@ public struct KeychainStore: SecretStore, @unchecked Sendable {
         return query
     }
 
-    public func loadAll() throws -> [StoredAccount] {
-        var accounts = try readBundle()
-        let legacy = try readLegacyItems()
-        guard !legacy.isEmpty else { return accounts }
-        for item in legacy where !accounts.contains(where: { $0.email == item.account.email }) { accounts.append(item.account) }
-        try writeBundle(accounts)
-        for item in legacy { try? deleteItem(item.itemAccount) }
-        return accounts
+    public func loadAll() throws -> [StoredAccount] { try loadVault().accounts }
+
+    public func loadClient() throws -> OAuthClient? {
+        let vault = try loadVault()
+        return vault.client ?? vault.accounts.first?.client
+    }
+
+    public func saveClient(_ client: OAuthClient) throws {
+        var vault = try loadVault()
+        vault.client = client
+        try writeVault(vault)
     }
 
     public func save(_ account: StoredAccount) throws {
-        var accounts = try loadAll()
-        if let i = accounts.firstIndex(where: { $0.email == account.email }) { accounts[i] = account } else { accounts.append(account) }
-        try writeBundle(accounts)
+        var vault = try loadVault()
+        if let i = vault.accounts.firstIndex(where: { $0.email == account.email }) { vault.accounts[i] = account } else { vault.accounts.append(account) }
+        if vault.client == nil { vault.client = account.client }
+        try writeVault(vault)
     }
 
     public func delete(email: String) throws {
-        var accounts = try loadAll()
-        accounts.removeAll { $0.email == email }
-        try writeBundle(accounts)
+        var vault = try loadVault()
+        vault.accounts.removeAll { $0.email == email }
+        try writeVault(vault)
+    }
+
+    private func loadVault() throws -> Vault {
+        var vault = try readVault()
+        let legacy = try readLegacyItems()
+        guard !legacy.isEmpty else { return vault }
+        for item in legacy where !vault.accounts.contains(where: { $0.email == item.account.email }) { vault.accounts.append(item.account) }
+        try writeVault(vault)
+        for item in legacy { try? deleteItem(item.itemAccount) }
+        return vault
     }
 
     func itemAccounts() throws -> [String] {
@@ -56,6 +75,10 @@ public struct KeychainStore: SecretStore, @unchecked Sendable {
         try writeItem(account: account.email, data: try JSONEncoder().encode(account))
     }
 
+    func addLegacyBundle(_ accounts: [StoredAccount]) throws {
+        try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(accounts))
+    }
+
     private func readData(_ itemAccount: String) throws -> Data? {
         var query = base(itemAccount)
         query[kSecReturnData as String] = true
@@ -66,9 +89,10 @@ public struct KeychainStore: SecretStore, @unchecked Sendable {
         return bytes
     }
 
-    private func readBundle() throws -> [StoredAccount] {
-        guard let data = try readData(Self.bundleAccount) else { return [] }
-        return (try? JSONDecoder().decode([StoredAccount].self, from: data)) ?? []
+    private func readVault() throws -> Vault {
+        guard let data = try readData(Self.bundleAccount) else { return Vault() }
+        if let vault = try? JSONDecoder().decode(Vault.self, from: data) { return vault }
+        return Vault(accounts: (try? JSONDecoder().decode([StoredAccount].self, from: data)) ?? [], client: nil)
     }
 
     private func readLegacyItems() throws -> [(itemAccount: String, account: StoredAccount)] {
@@ -79,9 +103,9 @@ public struct KeychainStore: SecretStore, @unchecked Sendable {
         }
     }
 
-    private func writeBundle(_ accounts: [StoredAccount]) throws {
-        if accounts.isEmpty { try deleteItem(Self.bundleAccount); return }
-        try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(accounts))
+    private func writeVault(_ vault: Vault) throws {
+        if vault.accounts.isEmpty && vault.client == nil { try deleteItem(Self.bundleAccount); return }
+        try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(vault))
     }
 
     private func writeItem(account: String, data: Data) throws {
