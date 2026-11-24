@@ -181,7 +181,9 @@ final class AppModel {
     }
 
     private func notify(_ mail: [UnreadThread], email: String) {
-        for notification in NotificationPlan.newMail(mail, email: email) { notifications.post(notification) }
+        let plan = NotificationPlan.newMail(mail, email: email)
+        if !plan.isEmpty { log.info("posting \(plan.count) notification(s) for \(mail.count) new message(s)") }
+        for notification in plan { notifications.post(notification) }
     }
 
     private func setStatus(_ status: AccountStatus, for email: String) {
