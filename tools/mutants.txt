@@ -89,13 +89,3 @@ Sources/InboxCore/KeychainStore.swift@@@let status = SecItemDelete(base(email) a
 Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else@@@guard status == 200 else@@@noContentResponseCountsAsSuccess
 Sources/InboxCore/Loopback.swift@@@} onCancel: {<NL>            listener.cancel()<NL>        }@@@} onCancel: {<NL>        }@@@signInStopsWhenItsTaskIsCancelled
-Sources/InboxCore/Models.swift@@@case .primary: return isUnreadInbox && labelIds.contains("CATEGORY_PERSONAL")@@@case .primary: return isUnreadInbox@@@qualifiesRequiresPersonalLabelOnlyInPrimaryMode
-Sources/InboxCore/Models.swift@@@case .inbox: return isUnreadInbox<NL>@@@case .inbox: return isUnreadInbox && labelIds.contains("CATEGORY_PERSONAL")<NL>@@@qualifiesRequiresPersonalLabelOnlyInPrimaryMode
-Sources/InboxCore/GmailClient.swift@@@if mode == .primary { query.append(("labelIds", "CATEGORY_PERSONAL")) }@@@if mode == .primary { }@@@primaryCountsDistinctThreadsOfPersonalUnreadInbox
-Sources/InboxCore/GmailClient.swift@@@if let thread = m["threadId"] as? String { threads.insert(thread) }@@@if let id = m["id"] as? String { threads.insert(id) }@@@primaryCountsDistinctThreadsOfPersonalUnreadInbox
-Sources/InboxCore/GmailClient.swift@@@        case .inbox: return try await inboxUnreadCount()@@@        case .inbox: return try await unreadCount(mode: .primary)@@@inboxCountUsesTheLabelNotAList
-Sources/InboxCore/GmailClient.swift@@@pageToken = o["nextPageToken"] as? String<NL>                if pageToken == nil { break }<NL>            }<NL>            return threads.count@@@pageToken = nil<NL>                if pageToken == nil { break }<NL>            }<NL>            return threads.count@@@primaryCountPagesThroughAllMessages
-Sources/InboxCore/AccountPoller.swift@@@guard newMode != mode else { return }@@@guard true else { return }@@@settingTheSameModeKeepsTheCursor
-Sources/InboxCore/AccountPoller.swift@@@        historyId = nil<NL>        last = nil<NL>        cache = [:]@@@        last = nil<NL>        cache = [:]@@@switchingModeResyncsWithoutNotifying
-Sources/InboxCore/AccountPoller.swift@@@guard let meta, meta.qualifies(for: mode) else { continue }@@@guard let meta, meta.isUnreadInbox else { continue }@@@primaryModeIgnoresNewPromotionsMail
-Sources/InboxCore/AccountPoller.swift@@@let refs = try await client.unreadRefs(limit: listSize, mode: mode)@@@let refs = try await client.unreadRefs(limit: listSize, mode: .inbox)@@@primaryCountsDistinctThreadsOfPersonalUnreadInbox

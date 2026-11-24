@@ -57,11 +57,6 @@ public struct UnreadThread: Equatable, Sendable, Identifiable {
     }
 }
 
-public enum InboxMode: String, Codable, Sendable, CaseIterable {
-    case inbox
-    case primary
-}
-
 public struct MessageMeta: Equatable, Sendable {
     public let thread: UnreadThread
     public let labelIds: Set<String>
@@ -72,13 +67,6 @@ public struct MessageMeta: Equatable, Sendable {
     }
 
     public var isUnreadInbox: Bool { labelIds.contains("INBOX") && labelIds.contains("UNREAD") }
-
-    public func qualifies(for mode: InboxMode) -> Bool {
-        switch mode {
-        case .inbox: return isUnreadInbox
-        case .primary: return isUnreadInbox && labelIds.contains("CATEGORY_PERSONAL")
-        }
-    }
 }
 
 public struct InboxSnapshot: Equatable, Sendable {
