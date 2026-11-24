@@ -13,8 +13,5 @@ struct InboxBadgeApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Settings {
-            SettingsView(model: model)
-        }
     }
 }

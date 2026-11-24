@@ -37,6 +37,8 @@ final class AppModel {
     @ObservationIgnored private var storedClient: OAuthClient?
 
     @ObservationIgnored private let notifications = NotificationRouter()
+    @ObservationIgnored private let settingsWindow = SettingsWindow()
+    @ObservationIgnored private var launchObserver: NSObjectProtocol?
 
     struct Runtime {
         let client: GmailClient
@@ -51,7 +53,10 @@ final class AppModel {
         notifications.onMarkRead = { [weak self] email, thread in self?.markRead(email: email, threadId: thread) }
         notifications.onDelete = { [weak self] email, thread in self?.trash(email: email, threadId: thread) }
         notifications.onReauth = { [weak self] in self?.openSettings() }
-        notifications.start()
+        launchObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didFinishLaunchingNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.notifications.start() }
+        }
         do {
             for account in try store.loadAll() { startRuntime(for: account) }
         } catch {
@@ -94,8 +99,7 @@ final class AppModel {
     }
 
     func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        settingsWindow.show(model: self)
     }
 
     func markRead(email: String, threadId: String) {

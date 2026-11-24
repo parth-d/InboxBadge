@@ -58,7 +58,7 @@ Sources/InboxCore/Loopback.swift@@@guard let refresh = grant.refreshToken else {
 Sources/InboxCore/Loopback.swift@@@challenge: PKCE.challenge(for: verifier)@@@challenge: PKCE.challenge(for: state)@@@signInBindsVerifierToChallengeAndReturnsAccount
 Sources/InboxCore/Loopback.swift@@@throw InboxError.authorization(error)@@@throw InboxError.malformed(error)@@@signInSurfacesAuthorizationError
 Sources/InboxCore/Loopback.swift@@@try await Task.sleep(for: .seconds(timeout))@@@try await Task.sleep(for: .seconds(3600))@@@signInTimesOut
-Sources/InboxCore/Loopback.swift@@@parameters.requiredInterfaceType = .loopback@@@parameters.requiredInterfaceType = nil@@@listenerIsNotReachableOnNonLoopbackInterfaces
+Sources/InboxCore/Loopback.swift@@@parameters.requiredInterfaceType = .loopback@@@_ = parameters@@@listenerIsNotReachableOnNonLoopbackInterfaces
 Sources/InboxCore/Loopback.swift@@@if let error = params["error"] {@@@if false, let error = params["error"] {@@@signInSurfacesAuthorizationError
 Sources/InboxCore/GmailClient.swift@@@("historyTypes", "messageAdded"), ("historyTypes", "messageDeleted"),@@@("historyTypes", "messageDeleted"),@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
 Sources/InboxCore/GmailClient.swift@@@seen.insert(id).inserted else { continue }@@@true else { continue }@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates

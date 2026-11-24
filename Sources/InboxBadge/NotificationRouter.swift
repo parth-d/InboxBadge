@@ -22,7 +22,7 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
             UNNotificationCategory(identifier: Self.category, actions: [read, delete], intentIdentifiers: [], options: []),
         ])
         center.requestAuthorization(options: [.alert]) { granted, error in
-            log.info("notification authorization granted=\(granted) error=\(error != nil)")
+            log.info("notification authorization granted=\(granted) error=\(error.map { String(describing: $0) } ?? "none", privacy: .public)")
         }
     }
 

@@ -19,7 +19,7 @@ while IFS= read -r line; do
   old=${rest%%@@@*}; rest=${rest#*@@@}
   new=${rest%%@@@*}; want=${rest#*@@@}
   old=${old//<NL>/$nl}; new=${new//<NL>/$nl}
-  cp "$ROOT/$file" "$WORK/$file"
+  rsync -a "$ROOT/Sources/" "$WORK/Sources/"
   OLD="$old" NEW="$new" perl -0pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/' "$WORK/$file"
   if cmp -s "$ROOT/$file" "$WORK/$file"; then
     echo "NOT-APPLIED  $file: ${old:0:60}"; bad=$((bad + 1)); continue
