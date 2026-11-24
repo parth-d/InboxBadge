@@ -24,7 +24,7 @@ while IFS= read -r line; do
   if cmp -s "$ROOT/$file" "$WORK/$file"; then
     echo "NOT-APPLIED  $file: ${old:0:60}"; bad=$((bad + 1)); continue
   fi
-  (cd "$WORK" && perl -e 'alarm 240; exec @ARGV' swift test ${FLAGS[@]+"${FLAGS[@]}"} > "$WORK/out.txt" 2>&1)
+  (cd "$WORK" && perl -e 'alarm 240; exec @ARGV' swift test --no-parallel ${FLAGS[@]+"${FLAGS[@]}"} > "$WORK/out.txt" 2>&1)
   code=$?
   pkill -f "$WORK/.build" 2>/dev/null
   if [ $code -eq 0 ]; then

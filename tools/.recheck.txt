@@ -1,0 +1,6 @@
+Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else { throw InboxError.http(status) }@@@guard status == 200 || status == 204 else { throw InboxError.http(0) }@@@serverErrorSurfacesStatus
+Sources/InboxCore/GmailClient.swift@@@"Bearer \(try await tokens.accessToken())"@@@"Token \(try await tokens.accessToken())"@@@inboxCountReadsLabelAndSendsBearer
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return TickResult(snapshot: nil)@@@return TickResult(snapshot: nil)@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@return TickResult(snapshot: try await resync())<NL>        }<NL>        switch@@@let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])<NL>        }<NL>        switch@@@baselineNeverNotifies
+Sources/InboxCore/AccountPoller.swift@@@resync without notifications")<NL>            return TickResult(snapshot: try await resync())@@@resync without notifications")<NL>            let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])@@@resyncAfterExpiredHistoryNeverNotifies

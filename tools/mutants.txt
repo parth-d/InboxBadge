@@ -20,7 +20,7 @@ Sources/InboxCore/OAuth.swift@@@if let rotated = grant.refreshToken { refreshTok
 Sources/InboxCore/OAuth.swift@@@if let loginHint { query.append(("login_hint", loginHint)) }@@@query.append(("login_hint", loginHint ?? ""))@@@authorizationURLOmitsHintWhenAbsent
 Sources/InboxCore/GmailClient.swift@@@if attempt == 0 { await tokens.invalidate(); continue }@@@if attempt == 0 { continue }@@@unauthorizedRefreshesOnceThenRetries
 Sources/InboxCore/GmailClient.swift@@@if status == 404 { throw InboxError.notFound }@@@if status == 404 { throw InboxError.http(404) }@@@historyExpiredOn404
-Sources/InboxCore/GmailClient.swift@@@guard status == 200 else { throw InboxError.http(status) }@@@guard status == 200 else { throw InboxError.http(0) }@@@serverErrorSurfacesStatus
+Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else { throw InboxError.http(status) }@@@guard status == 200 || status == 204 else { throw InboxError.http(0) }@@@serverErrorSurfacesStatus
 Sources/InboxCore/GmailClient.swift@@@if seen.insert(thread).inserted {@@@if true {@@@unreadRefsDedupeThreadsKeepOrderAndLimit
 Sources/InboxCore/GmailClient.swift@@@if refs.count == limit { break }@@@if refs.count == limit + 100 { break }@@@unreadRefsDedupeThreadsKeepOrderAndLimit
 Sources/InboxCore/GmailClient.swift@@@return any ? .changed(historyId: latest, added: added) : .unchanged(historyId: latest)@@@return any ? .unchanged(historyId: latest) : .changed(historyId: latest, added: added)@@@historyUnchangedWhenNoRecords
@@ -33,7 +33,7 @@ Sources/InboxCore/GmailClient.swift@@@("labelIds", "UNREAD")@@@("labelIds", "STA
 Sources/InboxCore/GmailClient.swift@@@($0["name"] as? String)?.lowercased() == name.lowercased()@@@($0["name"] as? String) == name@@@metadataParsesHeadersAndDate
 Sources/InboxCore/AccountPoller.swift@@@if snapshot == last { return nil }@@@if false { return nil }@@@changeThatLeavesSnapshotEqualEmitsNothing
 Sources/InboxCore/AccountPoller.swift@@@let missing = refs.filter { cache[$0.id] == nil }@@@let missing = refs@@@changeRefreshesSnapshotAndFetchesOnlyNewMessages
-Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return nil@@@return nil@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return TickResult(snapshot: nil)@@@return TickResult(snapshot: nil)@@@historyCursorAdvancesOnQuietAndChangedTicks
 Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@historyCursorAdvancesOnQuietAndChangedTicks
 Sources/InboxCore/AccountPoller.swift@@@historyId = profile.historyId@@@historyId = nil@@@quietTickIsOneHistoryCallAndNothingElse
 Sources/InboxCore/AccountPoller.swift@@@let metas = refs.compactMap { cache[$0.id] ?? fetched[$0.id] }@@@let metas = refs.compactMap { cache[$0.id] ?? fetched[$0.id] ?? MessageMeta(thread: UnreadThread(id: $0.threadId, messageID: $0.id, from: "", subject: "", date: nil), labelIds: []) }@@@messageThatVanishesBetweenListAndGetIsSkipped
@@ -72,8 +72,8 @@ Sources/InboxCore/GmailClient.swift@@@request.httpMethod = method@@@request.http
 Sources/InboxCore/Models.swift@@@labelIds.contains("INBOX") && labelIds.contains("UNREAD")@@@labelIds.contains("INBOX") || labelIds.contains("UNREAD")@@@newMailOnlyForAddedMessagesThatAreUnreadInbox
 Sources/InboxCore/AccountPoller.swift@@@where !notified.contains(ref.id)@@@where true@@@sameAddedMessageIsNotNotifiedTwice
 Sources/InboxCore/AccountPoller.swift@@@guard let meta, meta.isUnreadInbox else { continue }@@@guard let meta else { continue }@@@newMailOnlyForAddedMessagesThatAreUnreadInbox
-Sources/InboxCore/AccountPoller.swift@@@guard let known = historyId else { return TickResult(snapshot: try await resync()) }@@@guard let known = historyId else { let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? []) }@@@baselineNeverNotifies
-Sources/InboxCore/AccountPoller.swift@@@case .expired:<NL>            return TickResult(snapshot: try await resync())@@@case .expired:<NL>            let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])@@@resyncAfterExpiredHistoryNeverNotifies
+Sources/InboxCore/AccountPoller.swift@@@return TickResult(snapshot: try await resync())<NL>        }<NL>        switch@@@let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])<NL>        }<NL>        switch@@@baselineNeverNotifies
+Sources/InboxCore/AccountPoller.swift@@@resync without notifications")<NL>            return TickResult(snapshot: try await resync())@@@resync without notifications")<NL>            let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])@@@resyncAfterExpiredHistoryNeverNotifies
 Sources/InboxCore/AccountPoller.swift@@@if let cached = cache[ref.id] { meta = cached } else { meta = try? await client.metadata(of: ref) }@@@meta = cache[ref.id]@@@addedMessageBeyondTheListedWindowIsStillNotified
 Sources/InboxCore/NotificationPlan.swift@@@if mail.count > maxIndividual {@@@if mail.count > maxIndividual + 100 {@@@moreThanThreeCoalesceIntoOneSummary
 Sources/InboxCore/NotificationPlan.swift@@@public static let maxIndividual = 3@@@public static let maxIndividual = 2@@@fewMessagesNotifyIndividuallyWithThreadLink
