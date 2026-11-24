@@ -4,15 +4,15 @@ import Foundation
 final class StubTransport: HTTPTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var log: [URLRequest] = []
-    private let handler: @Sendable (URLRequest) -> (Data, Int)
+    private let handler: @Sendable (URLRequest) throws -> (Data, Int)
 
-    init(_ handler: @escaping @Sendable (URLRequest) -> (Data, Int)) { self.handler = handler }
+    init(_ handler: @escaping @Sendable (URLRequest) throws -> (Data, Int)) { self.handler = handler }
 
     var requests: [URLRequest] { lock.lock(); defer { lock.unlock() }; return log }
 
     func send(_ request: URLRequest) async throws -> (Data, Int) {
         lock.withLock { log.append(request) }
-        return handler(request)
+        return try handler(request)
     }
 
     func count(pathSuffix: String) -> Int { requests.filter { $0.url!.path.hasSuffix(pathSuffix) }.count }

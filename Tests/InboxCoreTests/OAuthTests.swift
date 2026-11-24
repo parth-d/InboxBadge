@@ -110,4 +110,22 @@ struct OAuthTests {
         #expect(bodies[0].contains("refresh_token=R1"))
         #expect(bodies[1].contains("refresh_token=R2"))
     }
+
+    @Test func revokePostsTheRefreshTokenToGoogle() async {
+        let t = StubTransport { _ in (Data(), 200) }
+        let p = TokenProvider(client: testClient, refreshToken: "the-refresh", transport: t,
+                              initial: TokenGrant(accessToken: "A0", refreshToken: nil, expiresIn: 3600))
+        #expect(await p.revoke())
+        let r = t.requests[0]
+        #expect(r.url == OAuth.revokeEndpoint)
+        #expect(r.httpMethod == "POST")
+        #expect(String(decoding: r.httpBody!, as: UTF8.self) == "token=the-refresh")
+    }
+
+    @Test func revokeReportsFailureWithoutThrowing() async {
+        let rejected = StubTransport { _ in (Data(), 400) }
+        #expect(!(await TokenProvider(client: testClient, refreshToken: "r", transport: rejected).revoke()))
+        let offline = StubTransport { _ in throw URLError(.notConnectedToInternet) }
+        #expect(!(await TokenProvider(client: testClient, refreshToken: "r", transport: offline).revoke()))
+    }
 }

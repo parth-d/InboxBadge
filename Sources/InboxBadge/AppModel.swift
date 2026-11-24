@@ -57,6 +57,7 @@ final class AppModel {
     @ObservationIgnored private var launchObserver: NSObjectProtocol?
 
     struct Runtime {
+        let tokens: TokenProvider
         let client: GmailClient
         let poller: AccountPoller
         let loop: PollLoop
@@ -119,7 +120,11 @@ final class AppModel {
     }
 
     func removeAccount(_ email: String) async {
-        if let runtime = runtimes.removeValue(forKey: email) { await runtime.loop.stop() }
+        if let runtime = runtimes.removeValue(forKey: email) {
+            await runtime.loop.stop()
+            let revoked = await runtime.tokens.revoke()
+            log.info("token revoked=\(revoked)")
+        }
         accounts.removeAll { $0.email == email }
         try? store.delete(email: email)
         if accounts.isEmpty { storedClient = nil }
@@ -212,7 +217,7 @@ final class AppModel {
                 throw error
             }
         }
-        runtimes[email] = Runtime(client: client, poller: poller, loop: loop)
+        runtimes[email] = Runtime(tokens: tokens, client: client, poller: poller, loop: loop)
         if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email)) }
         Task { await loop.start() }
     }

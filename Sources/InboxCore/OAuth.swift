@@ -16,6 +16,7 @@ public enum OAuth {
     public static let scope = "https://www.googleapis.com/auth/gmail.modify"
     public static let authEndpoint = "https://accounts.google.com/o/oauth2/v2/auth"
     public static let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
+    public static let revokeEndpoint = URL(string: "https://oauth2.googleapis.com/revoke")!
 
     public static func authorizationURL(client: OAuthClient, redirectURI: String, challenge: String,
                                         state: String, loginHint: String?) -> URL {
@@ -49,6 +50,16 @@ public enum OAuth {
             ("client_id", client.clientID), ("client_secret", client.clientSecret),
             ("refresh_token", refreshToken), ("grant_type", "refresh_token"),
         ], transport)
+    }
+
+    @discardableResult
+    public static func revoke(token: String, transport: HTTPTransport) async -> Bool {
+        var request = URLRequest(url: revokeEndpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data(FormEncoding.encode([("token", token)]).utf8)
+        guard let (_, status) = try? await transport.send(request) else { return false }
+        return status == 200
     }
 
     private static func tokenRequest(_ fields: [(String, String)], _ transport: HTTPTransport) async throws -> TokenGrant {
@@ -99,4 +110,10 @@ public actor TokenProvider {
     }
 
     public func invalidate() { access = nil }
+
+    @discardableResult
+    public func revoke() async -> Bool {
+        access = nil
+        return await OAuth.revoke(token: refreshToken, transport: transport)
+    }
 }
