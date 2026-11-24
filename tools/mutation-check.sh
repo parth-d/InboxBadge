@@ -8,8 +8,10 @@ PLUGINS=/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing
 FLAGS=()
 [ -d "$PLUGINS" ] && FLAGS=(-Xswiftc -plugin-path -Xswiftc "$PLUGINS")
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/inboxbadge-mutants.XXXXXX")
-trap 'rm -rf "$WORK"' EXIT
 rsync -a --exclude .git "$ROOT/" "$WORK/"
+ORIG=$(mktemp -d "${TMPDIR:-/tmp}/inboxbadge-orig.XXXXXX")
+trap 'rm -rf "$WORK" "$ORIG"' EXIT
+rsync -a "$WORK/Sources/" "$ORIG/"
 nl=$'\n'
 killed=0; bad=0; n=0
 while IFS= read -r line; do
@@ -19,7 +21,7 @@ while IFS= read -r line; do
   old=${rest%%@@@*}; rest=${rest#*@@@}
   new=${rest%%@@@*}; want=${rest#*@@@}
   old=${old//<NL>/$nl}; new=${new//<NL>/$nl}
-  rsync -a "$ROOT/Sources/" "$WORK/Sources/"
+  rsync -a "$ORIG/" "$WORK/Sources/"
   OLD="$old" NEW="$new" perl -0pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/' "$WORK/$file"
   if cmp -s "$ROOT/$file" "$WORK/$file"; then
     echo "NOT-APPLIED  $file: ${old:0:60}"; bad=$((bad + 1)); continue
