@@ -57,6 +57,18 @@ public struct UnreadThread: Equatable, Sendable, Identifiable {
     }
 }
 
+public struct MessageMeta: Equatable, Sendable {
+    public let thread: UnreadThread
+    public let labelIds: Set<String>
+
+    public init(thread: UnreadThread, labelIds: Set<String>) {
+        self.thread = thread
+        self.labelIds = labelIds
+    }
+
+    public var isUnreadInbox: Bool { labelIds.contains("INBOX") && labelIds.contains("UNREAD") }
+}
+
 public struct InboxSnapshot: Equatable, Sendable {
     public var unreadCount: Int
     public var threads: [UnreadThread]

@@ -36,7 +36,10 @@ final class AppModel {
     @ObservationIgnored private var runtimes: [String: Runtime] = [:]
     @ObservationIgnored private var storedClient: OAuthClient?
 
+    @ObservationIgnored private let notifications = NotificationRouter()
+
     struct Runtime {
+        let client: GmailClient
         let poller: AccountPoller
         let loop: PollLoop
     }
@@ -45,6 +48,10 @@ final class AppModel {
         environment.onWake = { [weak self] in
             Task { @MainActor in await self?.pokeAll() }
         }
+        notifications.onMarkRead = { [weak self] email, thread in self?.markRead(email: email, threadId: thread) }
+        notifications.onDelete = { [weak self] email, thread in self?.trash(email: email, threadId: thread) }
+        notifications.onReauth = { [weak self] in self?.openSettings() }
+        notifications.start()
         do {
             for account in try store.loadAll() { startRuntime(for: account) }
         } catch {
@@ -83,13 +90,56 @@ final class AppModel {
     }
 
     func checkNow() async {
-        for (email, runtime) in runtimes {
-            do {
-                if let snapshot = try await runtime.poller.resync() { apply(snapshot, to: email) }
-                setStatus(.ok, for: email)
-            } catch {
-                setStatus(statusFor(error), for: email)
-            }
+        for email in runtimes.keys { await resyncAccount(email) }
+    }
+
+    func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+
+    func markRead(email: String, threadId: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        if accounts[i].threads.contains(where: { $0.id == threadId }) {
+            accounts[i].threads.removeAll { $0.id == threadId }
+            accounts[i].unread = max(0, accounts[i].unread - 1)
+        }
+        Task { await perform("Could not mark as read", email: email) { try await runtime.client.markRead(threadId: threadId) } }
+    }
+
+    func trash(email: String, threadId: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        if accounts[i].threads.contains(where: { $0.id == threadId }) {
+            accounts[i].threads.removeAll { $0.id == threadId }
+            accounts[i].unread = max(0, accounts[i].unread - 1)
+        }
+        Task { await perform("Could not delete", email: email) { try await runtime.client.trash(threadId: threadId) } }
+    }
+
+    func markAllRead(email: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }) else { return }
+        accounts[i].threads = []
+        accounts[i].unread = 0
+        Task { await perform("Could not mark all as read", email: email) { _ = try await runtime.client.markAllRead() } }
+    }
+
+    private func perform(_ failure: String, email: String, _ action: @Sendable () async throws -> Void) async {
+        do {
+            try await action()
+        } catch {
+            log.error("action failed: \(Self.describe(error), privacy: .public)")
+            await resyncAccount(email)
+            setStatus(error as? InboxError == .reauthRequired ? .reauthRequired : .error(failure), for: email)
+        }
+    }
+
+    private func resyncAccount(_ email: String) async {
+        guard let runtime = runtimes[email] else { return }
+        do {
+            if let snapshot = try await runtime.poller.resync() { apply(snapshot, to: email) }
+            setStatus(.ok, for: email)
+        } catch {
+            setStatus(Self.statusFor(error), for: email)
         }
     }
 
@@ -100,18 +150,21 @@ final class AppModel {
     private func startRuntime(for account: StoredAccount) {
         storedClient = account.client
         let tokens = TokenProvider(client: account.client, refreshToken: account.refreshToken, transport: transport)
-        let poller = AccountPoller(client: GmailClient(tokens: tokens, transport: transport))
+        let client = GmailClient(tokens: tokens, transport: transport)
+        let poller = AccountPoller(client: client)
         let email = account.email
         let loop = PollLoop(policy: EnergyPolicy(), environment: environment) { [weak self] in
             do {
-                if let snapshot = try await poller.tick() { await self?.apply(snapshot, to: email) }
+                let result = try await poller.tick()
+                if let snapshot = result.snapshot { await self?.apply(snapshot, to: email) }
+                await self?.notify(result.newMail, email: email)
                 await self?.setStatus(.ok, for: email)
             } catch {
                 await self?.setStatus(Self.statusFor(error), for: email)
                 throw error
             }
         }
-        runtimes[email] = Runtime(poller: poller, loop: loop)
+        runtimes[email] = Runtime(client: client, poller: poller, loop: loop)
         if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email)) }
         Task { await loop.start() }
     }
@@ -123,8 +176,13 @@ final class AppModel {
         log.info("snapshot unread=\(snapshot.unreadCount) listed=\(snapshot.threads.count)")
     }
 
+    private func notify(_ mail: [UnreadThread], email: String) {
+        for notification in NotificationPlan.newMail(mail, email: email) { notifications.post(notification) }
+    }
+
     private func setStatus(_ status: AccountStatus, for email: String) {
         guard let i = accounts.firstIndex(where: { $0.email == email }), accounts[i].status != status else { return }
+        if status == .reauthRequired { notifications.post(NotificationPlan.reauth(email: email)) }
         accounts[i].status = status
         log.info("status \(String(describing: status), privacy: .public)")
     }

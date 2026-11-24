@@ -13,9 +13,8 @@ struct InboxBadgeApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("InboxBadge Settings", id: "settings") {
+        Settings {
             SettingsView(model: model)
         }
-        .windowResizability(.contentSize)
     }
 }

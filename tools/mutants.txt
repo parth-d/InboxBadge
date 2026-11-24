@@ -23,7 +23,7 @@ Sources/InboxCore/GmailClient.swift@@@if status == 404 { throw InboxError.notFou
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 else { throw InboxError.http(status) }@@@guard status == 200 else { throw InboxError.http(0) }@@@serverErrorSurfacesStatus
 Sources/InboxCore/GmailClient.swift@@@if seen.insert(thread).inserted {@@@if true {@@@unreadRefsDedupeThreadsKeepOrderAndLimit
 Sources/InboxCore/GmailClient.swift@@@if refs.count == limit { break }@@@if refs.count == limit + 100 { break }@@@unreadRefsDedupeThreadsKeepOrderAndLimit
-Sources/InboxCore/GmailClient.swift@@@return records.isEmpty ? .unchanged(historyId: latest) : .changed(historyId: latest)@@@return records.isEmpty ? .changed(historyId: latest) : .unchanged(historyId: latest)@@@historyUnchangedWhenNoRecords
+Sources/InboxCore/GmailClient.swift@@@return any ? .changed(historyId: latest, added: added) : .unchanged(historyId: latest)@@@return any ? .unchanged(historyId: latest) : .changed(historyId: latest, added: added)@@@historyUnchangedWhenNoRecords
 Sources/InboxCore/GmailClient.swift@@@("labelId", "INBOX")@@@("labelId", "UNREAD")@@@historyUnchangedWhenNoRecords
 Sources/InboxCore/GmailClient.swift@@@catch InboxError.notFound { return .expired }@@@catch InboxError.notFound { return .unchanged(historyId: startHistoryId) }@@@historyExpiredOn404
 Sources/InboxCore/GmailClient.swift@@@subject.isEmpty ? "(no subject)" : subject@@@subject.isEmpty ? "" : subject@@@emptySubjectGetsPlaceholder
@@ -34,9 +34,9 @@ Sources/InboxCore/GmailClient.swift@@@($0["name"] as? String)?.lowercased() == n
 Sources/InboxCore/AccountPoller.swift@@@if snapshot == last { return nil }@@@if false { return nil }@@@changeThatLeavesSnapshotEqualEmitsNothing
 Sources/InboxCore/AccountPoller.swift@@@let missing = refs.filter { cache[$0.id] == nil }@@@let missing = refs@@@changeRefreshesSnapshotAndFetchesOnlyNewMessages
 Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return nil@@@return nil@@@historyCursorAdvancesOnQuietAndChangedTicks
-Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return emit(snapshot)@@@return emit(snapshot)@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@return TickResult(snapshot: emit(snapshot), newMail: fresh)@@@historyCursorAdvancesOnQuietAndChangedTicks
 Sources/InboxCore/AccountPoller.swift@@@historyId = profile.historyId@@@historyId = nil@@@quietTickIsOneHistoryCallAndNothingElse
-Sources/InboxCore/AccountPoller.swift@@@try? await client.metadata(of: ref)@@@(try? await client.metadata(of: ref)) ?? UnreadThread(id: ref.threadId, messageID: ref.id, from: "", subject: "", date: nil)@@@messageThatVanishesBetweenListAndGetIsSkipped
+Sources/InboxCore/AccountPoller.swift@@@let metas = refs.compactMap { cache[$0.id] ?? fetched[$0.id] }@@@let metas = refs.compactMap { cache[$0.id] ?? fetched[$0.id] ?? MessageMeta(thread: UnreadThread(id: $0.threadId, messageID: $0.id, from: "", subject: "", date: nil), labelIds: []) }@@@messageThatVanishesBetweenListAndGetIsSkipped
 Sources/InboxCore/EnergyPolicy.swift@@@if displaysAsleep { t *= 5 }@@@if displaysAsleep { t *= 4 }@@@displaysAsleepStretchesFiveFold
 Sources/InboxCore/EnergyPolicy.swift@@@if lowPower { t *= 2 }@@@if lowPower { t *= 3 }@@@lowPowerDoubles
 Sources/InboxCore/EnergyPolicy.swift@@@var t = max(baseInterval, Self.minimumInterval)@@@var t = baseInterval@@@intervalNeverBelowMinimum
@@ -60,3 +60,29 @@ Sources/InboxCore/Loopback.swift@@@throw InboxError.authorization(error)@@@throw
 Sources/InboxCore/Loopback.swift@@@try await Task.sleep(for: .seconds(timeout))@@@try await Task.sleep(for: .seconds(3600))@@@signInTimesOut
 Sources/InboxCore/Loopback.swift@@@parameters.requiredInterfaceType = .loopback@@@parameters.requiredInterfaceType = nil@@@listenerIsNotReachableOnNonLoopbackInterfaces
 Sources/InboxCore/Loopback.swift@@@if let error = params["error"] {@@@if false, let error = params["error"] {@@@signInSurfacesAuthorizationError
+Sources/InboxCore/GmailClient.swift@@@("historyTypes", "messageAdded"), ("historyTypes", "messageDeleted"),@@@("historyTypes", "messageDeleted"),@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
+Sources/InboxCore/GmailClient.swift@@@seen.insert(id).inserted else { continue }@@@true else { continue }@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
+Sources/InboxCore/GmailClient.swift@@@pageToken = o["nextPageToken"] as? String<NL>            if pageToken == nil { break }<NL>        }<NL>        return any@@@pageToken = nil<NL>            if pageToken == nil { break }<NL>        }<NL>        return any@@@historyCollectsAddedMessagesAcrossPagesWithoutDuplicates
+Sources/InboxCore/GmailClient.swift@@@body: ["removeLabelIds": ["UNREAD"]])<NL>    }<NL><NL>    public func trash@@@body: ["removeLabelIds": ["INBOX"]])<NL>    }<NL><NL>    public func trash@@@markReadRemovesUnreadLabelFromTheThread
+Sources/InboxCore/GmailClient.swift@@@"threads/\(threadId)/trash"@@@"threads/\(threadId)/modify"@@@trashPostsToTheTrashEndpoint
+Sources/InboxCore/GmailClient.swift@@@index + 1000, ids.count@@@index + 500, ids.count@@@markAllReadPagesThenBatchesInChunksOfAThousand
+Sources/InboxCore/GmailClient.swift@@@index += 1000@@@index += 999@@@markAllReadPagesThenBatchesInChunksOfAThousand
+Sources/InboxCore/GmailClient.swift@@@("maxResults", "500")]@@@("maxResults", "100")]@@@markAllReadPagesThenBatchesInChunksOfAThousand
+Sources/InboxCore/GmailClient.swift@@@request.httpMethod = method@@@request.httpMethod = "GET"@@@markReadRemovesUnreadLabelFromTheThread
+Sources/InboxCore/Models.swift@@@labelIds.contains("INBOX") && labelIds.contains("UNREAD")@@@labelIds.contains("INBOX") || labelIds.contains("UNREAD")@@@newMailOnlyForAddedMessagesThatAreUnreadInbox
+Sources/InboxCore/AccountPoller.swift@@@where !notified.contains(ref.id)@@@where true@@@sameAddedMessageIsNotNotifiedTwice
+Sources/InboxCore/AccountPoller.swift@@@guard let meta, meta.isUnreadInbox else { continue }@@@guard let meta else { continue }@@@newMailOnlyForAddedMessagesThatAreUnreadInbox
+Sources/InboxCore/AccountPoller.swift@@@guard let known = historyId else { return TickResult(snapshot: try await resync()) }@@@guard let known = historyId else { let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? []) }@@@baselineNeverNotifies
+Sources/InboxCore/AccountPoller.swift@@@case .expired:<NL>            return TickResult(snapshot: try await resync())@@@case .expired:<NL>            let s = try await resync(); return TickResult(snapshot: s, newMail: s?.threads ?? [])@@@resyncAfterExpiredHistoryNeverNotifies
+Sources/InboxCore/AccountPoller.swift@@@if let cached = cache[ref.id] { meta = cached } else { meta = try? await client.metadata(of: ref) }@@@meta = cache[ref.id]@@@addedMessageBeyondTheListedWindowIsStillNotified
+Sources/InboxCore/NotificationPlan.swift@@@if mail.count > maxIndividual {@@@if mail.count > maxIndividual + 100 {@@@moreThanThreeCoalesceIntoOneSummary
+Sources/InboxCore/NotificationPlan.swift@@@public static let maxIndividual = 3@@@public static let maxIndividual = 2@@@fewMessagesNotifyIndividuallyWithThreadLink
+Sources/InboxCore/NotificationPlan.swift@@@url: GmailLinks.thread(email: email, threadId: $0.id))@@@url: GmailLinks.inbox(email: email))@@@fewMessagesNotifyIndividuallyWithThreadLink
+Sources/InboxCore/NotificationPlan.swift@@@title: SenderName.display($0.from), body: $0.subject,@@@title: $0.subject, body: SenderName.display($0.from),@@@fewMessagesNotifyIndividuallyWithThreadLink
+Sources/InboxCore/NotificationPlan.swift@@@title: "\(mail.count) new messages"@@@title: "new messages"@@@moreThanThreeCoalesceIntoOneSummary
+Sources/InboxCore/NotificationPlan.swift@@@identifier: "reauth.\(email)"@@@identifier: "reauth"@@@reauthNotificationNamesTheAccount
+Sources/InboxCore/KeychainStore.swift@@@listing[kSecReturnAttributes as String] = true@@@listing[kSecReturnData as String] = true@@@savedAccountsRoundTripAndSurviveANewStoreInstance
+Sources/InboxCore/KeychainStore.swift@@@if update == errSecSuccess { return }@@@if false { return }@@@savingTheSameEmailReplacesTheEntry
+Sources/InboxCore/KeychainStore.swift@@@kSecAttrService as String: service]@@@kSecAttrService as String: "shared"]@@@storesWithDifferentServicesAreIsolated
+Sources/InboxCore/KeychainStore.swift@@@if let email { query[kSecAttrAccount as String] = email }@@@_ = email@@@deleteRemovesOnlyThatAccountAndIsIdempotent
+Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent

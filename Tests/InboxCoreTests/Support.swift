@@ -41,38 +41,63 @@ func makeGmail(_ transport: StubTransport, token: String = "tok") -> GmailClient
 }
 
 final class FakeMailbox: @unchecked Sendable {
-    struct Msg { var id: String; var thread: String; var from: String; var subject: String }
+    struct Msg {
+        var id: String
+        var thread: String
+        var from: String
+        var subject: String
+        var labels: Set<String> = ["INBOX", "UNREAD"]
+    }
+
     private let lock = NSLock()
     var messages: [Msg] = []
     var historyChanged = false
     var historyStatus = 200
     var failMetadata: Set<String> = []
     var historyId = 100
+    var added: [String] = []
+    var historyPageSize = 100
+
+    private var unreadInbox: [Msg] { messages.filter { $0.labels.isSuperset(of: ["INBOX", "UNREAD"]) } }
 
     func handle(_ request: URLRequest) -> (Data, Int) {
         lock.lock(); defer { lock.unlock() }
         let path = request.url!.path
+        let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
         if path.hasSuffix("/profile") {
             return (jsonData(["emailAddress": "me@x.com", "historyId": "\(historyId)"]), 200)
         }
         if path.hasSuffix("/labels/INBOX") {
-            return (jsonData(["threadsUnread": Set(messages.map(\.thread)).count]), 200)
+            return (jsonData(["threadsUnread": Set(unreadInbox.map(\.thread)).count]), 200)
         }
         if path.hasSuffix("/history") {
             if historyStatus != 200 { return (Data(), historyStatus) }
             var object: [String: Any] = ["historyId": "\(historyId)"]
-            if historyChanged { object["history"] = [["id": "1"]] }
+            if historyChanged {
+                if added.isEmpty {
+                    object["history"] = [["id": "1"]]
+                } else {
+                    let start = Int(items.first { $0.name == "pageToken" }?.value ?? "0") ?? 0
+                    let end = min(start + historyPageSize, added.count)
+                    object["history"] = added[start..<end].map { id -> [String: Any] in
+                        let m = messages.first { $0.id == id }
+                        return ["id": id, "messagesAdded": [["message": ["id": id, "threadId": m?.thread ?? "t-\(id)",
+                                                                         "labelIds": Array(m?.labels ?? [])]]]]
+                    }
+                    if end < added.count { object["nextPageToken"] = "\(end)" }
+                }
+            }
             return (jsonData(object), 200)
         }
         if path.hasSuffix("/messages") {
-            let list = messages.map { ["id": $0.id, "threadId": $0.thread] }
+            let list = unreadInbox.map { ["id": $0.id, "threadId": $0.thread] }
             return (jsonData(list.isEmpty ? [:] : ["messages": list]), 200)
         }
         if path.contains("/messages/") {
             let id = String(path.split(separator: "/").last!)
             guard !failMetadata.contains(id), let m = messages.first(where: { $0.id == id }) else { return (Data(), 404) }
             return (jsonData([
-                "id": m.id, "threadId": m.thread, "internalDate": "1700000000000",
+                "id": m.id, "threadId": m.thread, "internalDate": "1700000000000", "labelIds": Array(m.labels),
                 "payload": ["headers": [["name": "From", "value": m.from], ["name": "subject", "value": m.subject]]],
             ]), 200)
         }

@@ -3,7 +3,6 @@ import InboxCore
 
 struct PopoverView: View {
     let model: AppModel
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -11,15 +10,12 @@ struct PopoverView: View {
                 Text("No accounts yet.").foregroundStyle(.secondary)
             }
             ForEach(model.accounts) { account in
-                AccountSection(account: account)
+                AccountSection(model: model, account: account)
             }
             Divider()
             HStack {
                 Button("Check now") { Task { await model.checkNow() } }
-                Button("Settings…") {
-                    openWindow(id: "settings")
-                    NSApp.activate(ignoringOtherApps: true)
-                }
+                Button("Settings…") { model.openSettings() }
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
             }
@@ -30,6 +26,7 @@ struct PopoverView: View {
 }
 
 private struct AccountSection: View {
+    let model: AppModel
     let account: AccountView
 
     var body: some View {
@@ -37,6 +34,9 @@ private struct AccountSection: View {
             HStack {
                 Text("\(account.email) · \(account.unread)").font(.headline)
                 Spacer()
+                if account.unread > 0 {
+                    Button("Mark all as read") { model.markAllRead(email: account.email) }.buttonStyle(.link)
+                }
                 Button("Open inbox") { NSWorkspace.shared.open(GmailLinks.inbox(email: account.email)) }
                     .buttonStyle(.link)
             }
@@ -49,12 +49,23 @@ private struct AccountSection: View {
                 EmptyView()
             }
             ForEach(account.threads) { thread in
-                Button {
-                    NSWorkspace.shared.open(GmailLinks.thread(email: account.email, threadId: thread.id))
-                } label: {
-                    ThreadRow(thread: thread)
+                HStack(spacing: 6) {
+                    Button {
+                        NSWorkspace.shared.open(GmailLinks.thread(email: account.email, threadId: thread.id))
+                    } label: {
+                        ThreadRow(thread: thread)
+                    }
+                    .buttonStyle(.plain)
+                    Button { model.markRead(email: account.email, threadId: thread.id) } label: {
+                        Image(systemName: "envelope.open")
+                    }
+                    .help("Mark as read")
+                    Button { model.trash(email: account.email, threadId: thread.id) } label: {
+                        Image(systemName: "trash")
+                    }
+                    .help("Delete")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
             if account.unread > account.threads.count {
                 Text("\(account.unread - account.threads.count) more in Gmail…").font(.caption).foregroundStyle(.secondary)
