@@ -9,5 +9,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "InboxCore"),
-    ]
+        .executableTarget(name: "InboxBadge", dependencies: ["InboxCore"]),
+        .testTarget(name: "InboxCoreTests", dependencies: ["InboxCore"]),
+    ],
+    swiftLanguageModes: [.v5]
 )

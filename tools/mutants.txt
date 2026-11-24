@@ -1,0 +1,62 @@
+# file@@@old@@@new@@@test that must fail   (<NL> = newline)
+Sources/InboxCore/PKCE.swift@@@.replacingOccurrences(of: "/", with: "_")@@@.replacingOccurrences(of: "/", with: "/")@@@base64URLReplacesUnsafeCharactersAndPadding
+Sources/InboxCore/PKCE.swift@@@.replacingOccurrences(of: "+", with: "-")@@@.replacingOccurrences(of: "+", with: "+")@@@base64URLReplacesUnsafeCharactersAndPadding
+Sources/InboxCore/PKCE.swift@@@.replacingOccurrences(of: "=", with: "")@@@.replacingOccurrences(of: "=", with: "=")@@@pkceMatchesRFC7636Vector
+Sources/InboxCore/PKCE.swift@@@base64URL(Data(SHA256.hash(data: Data(verifier.utf8))))@@@base64URL(Data(verifier.utf8))@@@pkceMatchesRFC7636Vector
+Sources/InboxCore/PKCE.swift@@@0123456789-._~")@@@0123456789-._~&")@@@formEscapingEncodesReservedCharacters
+Sources/InboxCore/Models.swift@@@(root["installed"] ?? root["web"])@@@(root["installed"])@@@clientJSONParsesInstalledAndWeb
+Sources/InboxCore/Models.swift@@@return "Unknown sender"@@@return "Unknown"@@@senderDisplayName
+Sources/InboxCore/Models.swift@@@if !name.isEmpty { return name }@@@if false { return name }@@@senderDisplayName
+Sources/InboxCore/Models.swift@@@#inbox/\(threadId)@@@#all/\(threadId)@@@deepLinkUsesFormOne
+Sources/InboxCore/Models.swift@@@authuser=\(FormEncoding.escape(email))#inbox/@@@authuser=\(email)#inbox/@@@deepLinkUsesFormOne
+Sources/InboxCore/OAuth.swift@@@("code_challenge_method", "S256")@@@("code_challenge_method", "plain")@@@authorizationURLCarriesPKCEScopeAndOffline
+Sources/InboxCore/OAuth.swift@@@("access_type", "offline")@@@("access_type", "online")@@@authorizationURLCarriesPKCEScopeAndOffline
+Sources/InboxCore/OAuth.swift@@@("code", code), ("code_verifier", verifier),@@@("code", code), ("code_verifier", code),@@@exchangeSendsVerifierAndParsesGrant
+Sources/InboxCore/OAuth.swift@@@== "invalid_grant"@@@== "invalid_gran"@@@invalidGrantMeansReauth
+Sources/InboxCore/OAuth.swift@@@access.expires > now().addingTimeInterval(60)@@@access.expires > now()@@@tokenProviderRefreshesAfterExpiry
+Sources/InboxCore/OAuth.swift@@@if let inflight { return try await inflight.value.accessToken }@@@if false, let inflight { return try await inflight.value.accessToken }@@@concurrentCallersShareOneRefresh
+Sources/InboxCore/OAuth.swift@@@public func invalidate() { access = nil }@@@public func invalidate() { }@@@invalidateForcesRefresh
+Sources/InboxCore/OAuth.swift@@@if let rotated = grant.refreshToken { refreshToken = rotated }@@@if false, let rotated = grant.refreshToken { refreshToken = rotated }@@@rotatedRefreshTokenIsUsedNext
+Sources/InboxCore/OAuth.swift@@@if let loginHint { query.append(("login_hint", loginHint)) }@@@query.append(("login_hint", loginHint ?? ""))@@@authorizationURLOmitsHintWhenAbsent
+Sources/InboxCore/GmailClient.swift@@@if attempt == 0 { await tokens.invalidate(); continue }@@@if attempt == 0 { continue }@@@unauthorizedRefreshesOnceThenRetries
+Sources/InboxCore/GmailClient.swift@@@if status == 404 { throw InboxError.notFound }@@@if status == 404 { throw InboxError.http(404) }@@@historyExpiredOn404
+Sources/InboxCore/GmailClient.swift@@@guard status == 200 else { throw InboxError.http(status) }@@@guard status == 200 else { throw InboxError.http(0) }@@@serverErrorSurfacesStatus
+Sources/InboxCore/GmailClient.swift@@@if seen.insert(thread).inserted {@@@if true {@@@unreadRefsDedupeThreadsKeepOrderAndLimit
+Sources/InboxCore/GmailClient.swift@@@if refs.count == limit { break }@@@if refs.count == limit + 100 { break }@@@unreadRefsDedupeThreadsKeepOrderAndLimit
+Sources/InboxCore/GmailClient.swift@@@return records.isEmpty ? .unchanged(historyId: latest) : .changed(historyId: latest)@@@return records.isEmpty ? .changed(historyId: latest) : .unchanged(historyId: latest)@@@historyUnchangedWhenNoRecords
+Sources/InboxCore/GmailClient.swift@@@("labelId", "INBOX")@@@("labelId", "UNREAD")@@@historyUnchangedWhenNoRecords
+Sources/InboxCore/GmailClient.swift@@@catch InboxError.notFound { return .expired }@@@catch InboxError.notFound { return .unchanged(historyId: startHistoryId) }@@@historyExpiredOn404
+Sources/InboxCore/GmailClient.swift@@@subject.isEmpty ? "(no subject)" : subject@@@subject.isEmpty ? "" : subject@@@emptySubjectGetsPlaceholder
+Sources/InboxCore/GmailClient.swift@@@Date(timeIntervalSince1970: $0 / 1000)@@@Date(timeIntervalSince1970: $0 / 100)@@@metadataParsesHeadersAndDate
+Sources/InboxCore/GmailClient.swift@@@"Bearer \(try await tokens.accessToken())"@@@"Token \(try await tokens.accessToken())"@@@inboxCountReadsLabelAndSendsBearer
+Sources/InboxCore/GmailClient.swift@@@("labelIds", "UNREAD")@@@("labelIds", "STARRED")@@@unreadRefsDedupeThreadsKeepOrderAndLimit
+Sources/InboxCore/GmailClient.swift@@@($0["name"] as? String)?.lowercased() == name.lowercased()@@@($0["name"] as? String) == name@@@metadataParsesHeadersAndDate
+Sources/InboxCore/AccountPoller.swift@@@if snapshot == last { return nil }@@@if false { return nil }@@@changeThatLeavesSnapshotEqualEmitsNothing
+Sources/InboxCore/AccountPoller.swift@@@let missing = refs.filter { cache[$0.id] == nil }@@@let missing = refs@@@changeRefreshesSnapshotAndFetchesOnlyNewMessages
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return nil@@@return nil@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@historyId = id<NL>            return emit(snapshot)@@@return emit(snapshot)@@@historyCursorAdvancesOnQuietAndChangedTicks
+Sources/InboxCore/AccountPoller.swift@@@historyId = profile.historyId@@@historyId = nil@@@quietTickIsOneHistoryCallAndNothingElse
+Sources/InboxCore/AccountPoller.swift@@@try? await client.metadata(of: ref)@@@(try? await client.metadata(of: ref)) ?? UnreadThread(id: ref.threadId, messageID: ref.id, from: "", subject: "", date: nil)@@@messageThatVanishesBetweenListAndGetIsSkipped
+Sources/InboxCore/EnergyPolicy.swift@@@if displaysAsleep { t *= 5 }@@@if displaysAsleep { t *= 4 }@@@displaysAsleepStretchesFiveFold
+Sources/InboxCore/EnergyPolicy.swift@@@if lowPower { t *= 2 }@@@if lowPower { t *= 3 }@@@lowPowerDoubles
+Sources/InboxCore/EnergyPolicy.swift@@@var t = max(baseInterval, Self.minimumInterval)@@@var t = baseInterval@@@intervalNeverBelowMinimum
+Sources/InboxCore/EnergyPolicy.swift@@@, max(maxBackoff, t))@@@, maxBackoff)@@@backoffNeverShortensAnAlreadyLongInterval
+Sources/InboxCore/EnergyPolicy.swift@@@toleranceFraction = 0.2@@@toleranceFraction = 0.1@@@toleranceIsAtLeastFifteenPercent
+Sources/InboxCore/EnergyPolicy.swift@@@pow(2, Double@@@pow(3, Double@@@backoffDoublesPerFailureAndCaps
+Sources/InboxCore/EnergyPolicy.swift@@@pokePending = true@@@pokePending = false@@@pokeDuringATickIsNotLost
+Sources/InboxCore/EnergyPolicy.swift@@@failures = 0<NL>            } catch@@@failures += 0<NL>            } catch@@@failuresBackOffAndSuccessResets
+Sources/InboxCore/EnergyPolicy.swift@@@catch InboxError.reauthRequired {@@@catch InboxError.http(0) {@@@reauthRequiredEndsTheLoop
+Sources/InboxCore/EnergyPolicy.swift@@@task?.cancel()@@@_ = 0@@@stopHaltsTicking
+Sources/InboxCore/EnergyPolicy.swift@@@if let sleeping { sleeping.cancel() } else { pokePending = true }@@@if false, let sleeping { sleeping.cancel() } else { pokePending = true }@@@pokeWakesTheSleepImmediately
+Sources/InboxCore/EnergyPolicy.swift@@@if pokePending { pokePending = false; continue }@@@if pokePending { pokePending = false }@@@pokeDuringATickIsNotLost
+Sources/InboxCore/EnergyPolicy.swift@@@displaysAsleep: environment.displaysAsleep,@@@displaysAsleep: false,@@@displaysAsleepUsesLongerInterval
+Sources/InboxCore/Loopback.swift@@@parts[0] == "GET"@@@parts[0] == "GET" || true@@@ignoresUnrelatedRequests
+Sources/InboxCore/Loopback.swift@@@$0.name == "state" || $0.name == "error"@@@$0.name == "state"@@@parsesCallbackQuery
+Sources/InboxCore/Loopback.swift@@@if self.deliver(.success(params)) {@@@if self.deliver(.success(params)) || true {@@@deliversCallbackOverARealSocketOnce
+Sources/InboxCore/Loopback.swift@@@guard params["state"] == state, let code = params["code"] else@@@guard let code = params["code"] else@@@signInRejectsStateMismatch
+Sources/InboxCore/Loopback.swift@@@guard let refresh = grant.refreshToken else { throw InboxError.malformed("no refresh token") }@@@let refresh = grant.refreshToken ?? "x"@@@signInWithoutRefreshTokenFails
+Sources/InboxCore/Loopback.swift@@@challenge: PKCE.challenge(for: verifier)@@@challenge: PKCE.challenge(for: state)@@@signInBindsVerifierToChallengeAndReturnsAccount
+Sources/InboxCore/Loopback.swift@@@throw InboxError.authorization(error)@@@throw InboxError.malformed(error)@@@signInSurfacesAuthorizationError
+Sources/InboxCore/Loopback.swift@@@try await Task.sleep(for: .seconds(timeout))@@@try await Task.sleep(for: .seconds(3600))@@@signInTimesOut
+Sources/InboxCore/Loopback.swift@@@parameters.requiredInterfaceType = .loopback@@@parameters.requiredInterfaceType = nil@@@listenerIsNotReachableOnNonLoopbackInterfaces
+Sources/InboxCore/Loopback.swift@@@if let error = params["error"] {@@@if false, let error = params["error"] {@@@signInSurfacesAuthorizationError
