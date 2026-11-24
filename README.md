@@ -58,6 +58,12 @@ Signing: `make app` uses a self-signed identity if one exists, otherwise an ad-h
 
 `tools/mutation-check.sh` applies each seeded fault in `tools/mutants.txt` to a throwaway copy and requires the named test to fail.
 
+## Measuring energy
+
+`tools/energy-minutes.sh <minutes> <warm-up seconds>` prints, per minute, the app's CPU time, thread count and idle wakeups; match the minutes with `make logs` to tell quiet ones from busy ones (new mail costs a notification and a sound). To measure a chosen set of accounts without removing the others, launch with `open --env INBOXBADGE_ONLY=a@gmail.com,b@gmail.com ~/Applications/InboxBadge.app` (a developer switch; the other accounts stay signed in but are not polled).
+
+Measured 2026-11-24 on an Apple-silicon MacBook (AC power, display on, two accounts, 60 s interval, no new mail): 0.45 s of CPU in 10 minutes, about 2.7 s per hour, with a typical idle minute at 0.02 s. A minute with new mail and a notification costs 0.1 to 0.2 s.
+
 ## License
 
 MIT, see `LICENSE`.

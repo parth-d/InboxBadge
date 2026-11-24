@@ -75,7 +75,8 @@ final class AppModel {
         }
         storedClient = try? store.loadClient()
         do {
-            for account in try store.loadAll() { startRuntime(for: account) }
+            let only = ProcessInfo.processInfo.environment["INBOXBADGE_ONLY"].map { Set($0.split(separator: ",").map(String.init)) }
+            for account in try store.loadAll() where only?.contains(account.email) ?? true { startRuntime(for: account) }
             sortByStoredOrder()
         } catch {
             log.error("keychain load failed: \(String(describing: error), privacy: .public)")
