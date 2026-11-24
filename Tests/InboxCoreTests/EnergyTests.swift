@@ -96,6 +96,20 @@ struct PollLoopTests {
         await loop.stop()
     }
 
+    @Test func changingThePolicyAppliesToTheNextSleep() async {
+        let (loop, ticks, sleeps) = rig { _ in }
+        await loop.start()
+        #expect(await waitUntil { sleeps.count == 1 })
+        await loop.setPolicy(EnergyPolicy(baseInterval: 300))
+        #expect(await waitUntil { sleeps.count == 2 })
+        #expect(sleeps.recorded[2] == 300)
+        #expect(ticks.count == 2)
+        await loop.setPolicy(EnergyPolicy(baseInterval: 300))
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(ticks.count == 2)
+        await loop.stop()
+    }
+
     @Test func displaysAsleepUsesLongerInterval() async {
         let env = FakeEnvironment()
         env.displaysAsleep = true

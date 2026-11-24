@@ -39,7 +39,7 @@ public actor PollLoop {
         try? await Task.sleep(for: .seconds(seconds), tolerance: .seconds(tolerance))
     }
 
-    private let policy: EnergyPolicy
+    private var policy: EnergyPolicy
     private let environment: PollEnvironment
     private let tick: @Sendable () async throws -> Void
     private let sleeper: Sleeper
@@ -65,6 +65,12 @@ public actor PollLoop {
         task?.cancel()
         sleeping?.cancel()
         task = nil
+    }
+
+    public func setPolicy(_ newPolicy: EnergyPolicy) {
+        guard newPolicy != policy else { return }
+        policy = newPolicy
+        poke()
     }
 
     public func poke() {

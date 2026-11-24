@@ -27,6 +27,21 @@ final class AppModel {
     private(set) var isSigningIn = false
     var signInError: String?
     var showImporter = false
+    private(set) var openAtLogin = LoginItem.isEnabled
+    var loginItemError: String?
+    var notificationsEnabled: Bool = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled") }
+    }
+    var pollInterval: TimeInterval = {
+        let saved = UserDefaults.standard.double(forKey: "pollInterval")
+        return saved >= EnergyPolicy.minimumInterval ? saved : 60
+    }() {
+        didSet {
+            UserDefaults.standard.set(pollInterval, forKey: "pollInterval")
+            let policy = EnergyPolicy(baseInterval: pollInterval)
+            for runtime in runtimes.values { Task { await runtime.loop.setPolicy(policy) } }
+        }
+    }
 
     var totalUnread: Int { accounts.reduce(0) { $0 + $1.unread } }
 
@@ -92,6 +107,10 @@ final class AppModel {
             try store.save(account)
             if let old = runtimes[account.email] { await old.loop.stop() }
             startRuntime(for: account)
+            if !UserDefaults.standard.bool(forKey: "loginItemConfigured") {
+                UserDefaults.standard.set(true, forKey: "loginItemConfigured")
+                setOpenAtLogin(true)
+            }
         } catch {
             if Task.isCancelled { log.info("sign-in cancelled"); return }
             signInError = Self.describe(error)
@@ -108,6 +127,18 @@ final class AppModel {
 
     func checkNow() async {
         await pokeAll()
+    }
+
+    func setOpenAtLogin(_ enabled: Bool) {
+        do {
+            try LoginItem.set(enabled)
+            loginItemError = nil
+        } catch {
+            loginItemError = "macOS refused: \(error.localizedDescription)"
+            log.error("login item failed: \(String(describing: error), privacy: .public)")
+        }
+        openAtLogin = LoginItem.isEnabled
+        log.info("login item enabled=\(self.openAtLogin)")
     }
 
     func openSettings() {
@@ -170,7 +201,7 @@ final class AppModel {
         let client = GmailClient(tokens: tokens, transport: transport)
         let poller = AccountPoller(client: client)
         let email = account.email
-        let loop = PollLoop(policy: EnergyPolicy(), environment: environment) { [weak self] in
+        let loop = PollLoop(policy: EnergyPolicy(baseInterval: pollInterval), environment: environment) { [weak self] in
             do {
                 let result = try await poller.tick()
                 if let snapshot = result.snapshot { await self?.apply(snapshot, to: email) }
@@ -194,6 +225,7 @@ final class AppModel {
     }
 
     private func notify(_ mail: [UnreadThread], email: String) {
+        guard notificationsEnabled else { return }
         let plan = NotificationPlan.newMail(mail, email: email)
         if !plan.isEmpty { log.info("posting \(plan.count) notification(s) for \(mail.count) new message(s)") }
         for notification in plan { notifications.post(notification) }

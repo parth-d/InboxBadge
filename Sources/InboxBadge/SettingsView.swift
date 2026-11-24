@@ -6,6 +6,18 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("General") {
+                Picker("Check for mail every", selection: Binding(get: { model.pollInterval }, set: { model.pollInterval = $0 })) {
+                    Text("30 seconds").tag(30.0)
+                    Text("1 minute").tag(60.0)
+                    Text("2 minutes").tag(120.0)
+                    Text("5 minutes").tag(300.0)
+                    Text("10 minutes").tag(600.0)
+                }
+                Toggle("Notify about new mail", isOn: Binding(get: { model.notificationsEnabled }, set: { model.notificationsEnabled = $0 }))
+                Toggle("Open at login", isOn: Binding(get: { model.openAtLogin }, set: { model.setOpenAtLogin($0) }))
+                if let error = model.loginItemError { Text(error).font(.caption).foregroundStyle(.red) }
+            }
             Section("Accounts") {
                 if model.accounts.isEmpty { Text("No accounts yet.").foregroundStyle(.secondary) }
                 ForEach(model.accounts) { account in
@@ -35,7 +47,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 300)
+        .frame(width: 480, height: 420)
         .fileImporter(isPresented: Binding(get: { model.showImporter }, set: { model.showImporter = $0 }), allowedContentTypes: [.json]) { result in
             guard case .success(let url) = result else { return }
             let scoped = url.startAccessingSecurityScopedResource()

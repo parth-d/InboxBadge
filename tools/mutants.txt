@@ -89,3 +89,5 @@ Sources/InboxCore/KeychainStore.swift@@@let status = SecItemDelete(base(email) a
 Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else@@@guard status == 200 else@@@noContentResponseCountsAsSuccess
 Sources/InboxCore/Loopback.swift@@@} onCancel: {<NL>            listener.cancel()<NL>        }@@@} onCancel: {<NL>        }@@@signInStopsWhenItsTaskIsCancelled
+Sources/InboxCore/EnergyPolicy.swift@@@        policy = newPolicy<NL>        poke()@@@        poke()@@@changingThePolicyAppliesToTheNextSleep
+Sources/InboxCore/EnergyPolicy.swift@@@guard newPolicy != policy else { return }@@@guard true else { return }@@@changingThePolicyAppliesToTheNextSleep
