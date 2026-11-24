@@ -36,7 +36,7 @@ public struct GmailClient: Sendable {
                 throw InboxError.reauthRequired
             }
             if status == 404 { throw InboxError.notFound }
-            guard status == 200 else { throw InboxError.http(status) }
+            guard status == 200 || status == 204 else { throw InboxError.http(status) }
             if data.isEmpty { return [:] }
             guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
                 throw InboxError.malformed(path)

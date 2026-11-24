@@ -158,7 +158,7 @@ struct GmailClientTests {
 
     @Test func markAllReadPagesThenBatchesInChunksOfAThousand() async throws {
         let t = StubTransport { r in
-            if r.url!.path.hasSuffix("/batchModify") { return (Data(), 200) }
+            if r.url!.path.hasSuffix("/batchModify") { return (Data(), 204) }
             let token = URLComponents(url: r.url!, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "pageToken" }?.value
             let page = Int(token ?? "0")!
             let ids = (page * 500..<(page + 1) * 500).map { ["id": "m\($0)", "threadId": "t\($0)"] }
@@ -181,5 +181,10 @@ struct GmailClientTests {
         let t = StubTransport { _ in (jsonData([String: Any]()), 200) }
         #expect(try await makeGmail(t).markAllRead() == 0)
         #expect(t.requests.filter { $0.url!.path.hasSuffix("/batchModify") }.isEmpty)
+    }
+
+    @Test func noContentResponseCountsAsSuccess() async throws {
+        let t = StubTransport { _ in (Data(), 204) }
+        try await makeGmail(t).markRead(threadId: "t1")
     }
 }
