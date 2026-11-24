@@ -34,6 +34,7 @@ public actor AccountPoller {
         case .changed(let id, let added):
             let snapshot = try await takeSnapshot()
             let fresh = await newMail(from: added)
+            coreLog.info("tick changed added=\(added.count) fresh=\(fresh.count)")
             historyId = id
             return TickResult(snapshot: emit(snapshot), newMail: fresh)
         case .expired:

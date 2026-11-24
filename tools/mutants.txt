@@ -87,3 +87,4 @@ Sources/InboxCore/KeychainStore.swift@@@kSecAttrService as String: service]@@@kS
 Sources/InboxCore/KeychainStore.swift@@@if let email { query[kSecAttrAccount as String] = email }@@@_ = email@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else@@@guard status == 200 else@@@noContentResponseCountsAsSuccess
+Sources/InboxCore/Loopback.swift@@@} onCancel: {<NL>            listener.cancel()<NL>        }@@@} onCancel: {<NL>        }@@@signInStopsWhenItsTaskIsCancelled

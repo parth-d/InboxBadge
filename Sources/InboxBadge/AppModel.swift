@@ -35,6 +35,7 @@ final class AppModel {
     @ObservationIgnored private let environment = SystemEnvironment()
     @ObservationIgnored private var runtimes: [String: Runtime] = [:]
     @ObservationIgnored private var storedClient: OAuthClient?
+    @ObservationIgnored private var signInTask: Task<Void, Never>?
 
     @ObservationIgnored private let notifications = NotificationRouter()
     @ObservationIgnored private let settingsWindow = SettingsWindow()
@@ -66,7 +67,17 @@ final class AppModel {
 
     var hasClient: Bool { storedClient != nil }
 
-    func addAccount(clientJSON: Data?) async {
+    func startSignIn(clientJSON: Data?) {
+        guard signInTask == nil else { return }
+        signInTask = Task {
+            await addAccount(clientJSON: clientJSON)
+            signInTask = nil
+        }
+    }
+
+    func cancelSignIn() { signInTask?.cancel() }
+
+    private func addAccount(clientJSON: Data?) async {
         isSigningIn = true
         signInError = nil
         defer { isSigningIn = false }
@@ -82,6 +93,7 @@ final class AppModel {
             if let old = runtimes[account.email] { await old.loop.stop() }
             startRuntime(for: account)
         } catch {
+            if Task.isCancelled { log.info("sign-in cancelled"); return }
             signInError = Self.describe(error)
             log.error("sign-in failed: \(Self.describe(error), privacy: .public)")
         }

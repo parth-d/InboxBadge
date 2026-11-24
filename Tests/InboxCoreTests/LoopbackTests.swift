@@ -118,6 +118,14 @@ struct LoopbackTests {
         }
     }
 
+    @Test func signInStopsWhenItsTaskIsCancelled() async {
+        let transport = tokenAndProfileTransport()
+        let task = Task { try await SignIn.run(client: testClient, transport: transport) { _ in } }
+        try? await Task.sleep(for: .milliseconds(150))
+        task.cancel()
+        await #expect(throws: InboxError.cancelled) { _ = try await task.value }
+    }
+
     @Test func signInTimesOut() async {
         await #expect(throws: InboxError.cancelled) {
             _ = try await SignIn.run(client: testClient, transport: tokenAndProfileTransport(), timeout: 0.2) { _ in }

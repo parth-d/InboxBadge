@@ -117,7 +117,11 @@ public enum SignIn {
             listener.cancel()
         }
         defer { timer.cancel() }
-        let params = try await listener.awaitCallback()
+        let params = try await withTaskCancellationHandler {
+            try await listener.awaitCallback()
+        } onCancel: {
+            listener.cancel()
+        }
         if let error = params["error"] { throw InboxError.authorization(error) }
         guard params["state"] == state, let code = params["code"] else { throw InboxError.malformed("callback") }
         let grant = try await OAuth.exchange(code: code, verifier: verifier, redirectURI: redirect,

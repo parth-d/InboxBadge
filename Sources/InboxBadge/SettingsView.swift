@@ -17,14 +17,20 @@ struct SettingsView: View {
                 }
                 HStack {
                     Button(model.hasClient ? "Add account (same Google client)…" : "Add account…") {
-                        if model.hasClient { Task { await model.addAccount(clientJSON: nil) } } else { model.showImporter = true }
+                        if model.hasClient { model.startSignIn(clientJSON: nil) } else { model.showImporter = true }
                     }
                     .disabled(model.isSigningIn)
                     if model.hasClient {
                         Button("Add with another client JSON…") { model.showImporter = true }.disabled(model.isSigningIn)
                     }
                 }
-                if model.isSigningIn { Text("Finish signing in in your browser…").foregroundStyle(.secondary) }
+                if model.isSigningIn {
+                    HStack {
+                        Text("Waiting for Google in your browser…").foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Cancel") { model.cancelSignIn() }
+                    }
+                }
                 if let error = model.signInError { Text(error).foregroundStyle(.red) }
             }
         }
@@ -35,7 +41,7 @@ struct SettingsView: View {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url) else { return }
-            Task { await model.addAccount(clientJSON: data) }
+            model.startSignIn(clientJSON: data)
         }
     }
 }

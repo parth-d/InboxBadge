@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+let coreLog = Logger(subsystem: "io.github.parth-d.InboxBadge", category: "core")
 
 public enum HistoryDelta: Equatable, Sendable {
     case unchanged(historyId: String)
@@ -81,7 +84,10 @@ public struct GmailClient: Sendable {
             do { o = try await get("history", query) } catch InboxError.notFound { return .expired }
             latest = (o["historyId"] as? String) ?? latest
             let records = o["history"] as? [[String: Any]] ?? []
-            if !records.isEmpty { any = true }
+            if !records.isEmpty {
+                any = true
+                coreLog.info("history records=\(records.count) keys=\(Set(records.flatMap { $0.keys }).sorted().joined(separator: ","), privacy: .public)")
+            }
             for record in records {
                 for entry in record["messagesAdded"] as? [[String: Any]] ?? [] {
                     guard let m = entry["message"] as? [String: Any], let id = m["id"] as? String,
