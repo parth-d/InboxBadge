@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let model: AppModel
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
+    private var observers: [NSObjectProtocol] = []
 
     init(model: AppModel) {
         self.model = model
@@ -24,6 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         host.sizingOptions = [.preferredContentSize]
         popover.contentViewController = host
         popover.behavior = .transient
+        let close: @Sendable (Notification) -> Void = { [weak self] _ in
+            Task { @MainActor in self?.popover.performClose(nil) }
+        }
+        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main, using: close))
+        observers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main, using: close))
         track()
     }
 
