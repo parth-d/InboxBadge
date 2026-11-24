@@ -84,9 +84,8 @@ Sources/InboxCore/NotificationPlan.swift@@@identifier: "reauth.\(email)"@@@ident
 Sources/InboxCore/KeychainStore.swift@@@listing[kSecReturnAttributes as String] = true@@@listing[kSecReturnData as String] = true@@@savedAccountsRoundTripAndSurviveANewStoreInstance
 Sources/InboxCore/KeychainStore.swift@@@if update == errSecSuccess { return }@@@if false { return }@@@savingTheSameEmailReplacesTheEntry
 Sources/InboxCore/KeychainStore.swift@@@kSecAttrService as String: service]@@@kSecAttrService as String: "shared"]@@@storesWithDifferentServicesAreIsolated
-Sources/InboxCore/KeychainStore.swift@@@if let account { query[kSecAttrAccount as String] = account }@@@_ = account@@@savingTheSameEmailReplacesTheEntry
-Sources/InboxCore/KeychainStore.swift@@@let status = SecItemDelete(base(account) as CFDictionary)@@@let status = SecItemDelete(base() as CFDictionary)@@@deleteRemovesOnlyThatAccountAndIsIdempotent
-Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deleteRemovesOnlyThatAccountAndIsIdempotent
+Sources/InboxCore/KeychainStore.swift@@@if let account { query[kSecAttrAccount as String] = account }@@@_ = account@@@legacyPerAccountItemsMigrateIntoTheSingleItem
+Sources/InboxCore/KeychainStore.swift@@@guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }@@@guard status == errSecSuccess else { throw KeychainError.status(status) }@@@deletingFromAnEmptyStoreIsHarmless
 Sources/InboxCore/GmailClient.swift@@@guard status == 200 || status == 204 else@@@guard status == 200 else@@@noContentResponseCountsAsSuccess
 Sources/InboxCore/Loopback.swift@@@} onCancel: {<NL>            listener.cancel()<NL>        }@@@} onCancel: {<NL>        }@@@signInStopsWhenItsTaskIsCancelled
 Sources/InboxCore/EnergyPolicy.swift@@@        policy = newPolicy<NL>        poke()@@@        poke()@@@changingThePolicyAppliesToTheNextSleep
@@ -99,7 +98,7 @@ Sources/InboxCore/Models.swift@@@case ..<60: return "now"@@@case ..<61: return "
 Sources/InboxCore/Models.swift@@@case ..<604800: return "\(Int(s / 86400))d"@@@case ..<604801: return "\(Int(s / 86400))d"@@@ageFormatBoundaries
 Sources/InboxCore/KeychainStore.swift@@@for item in legacy { try? deleteItem(item.itemAccount) }@@@for _ in legacy { }@@@legacyPerAccountItemsMigrateIntoTheSingleItem
 Sources/InboxCore/KeychainStore.swift@@@for item in legacy where !vault.accounts.contains(where: { $0.email == item.account.email }) { vault.accounts.append(item.account) }@@@for item in legacy where false { vault.accounts.append(item.account) }@@@legacyPerAccountItemsMigrateIntoTheSingleItem
-Sources/InboxCore/KeychainStore.swift@@@try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(vault))@@@try writeItem(account: vault.accounts[0].email, data: try JSONEncoder().encode(vault))@@@everyAccountLivesInOneKeychainItem
+Sources/InboxCore/KeychainStore.swift@@@try writeItem(account: Self.bundleAccount, data: try JSONEncoder().encode(vault))@@@try writeItem(account: vault.accounts[0].email, data: try JSONEncoder().encode(vault))@@@savedAccountsRoundTripAndSurviveANewStoreInstance
 Sources/InboxCore/GmailClient.swift@@@if labels.contains("SPAM") { query.append(("includeSpamTrash", "true")) }@@@if labels.contains("INBOX") { query.append(("includeSpamTrash", "true")) }@@@markSpamReadListsUnreadSpamIncludingSpamFolderAndRemovesUnread
 Sources/InboxCore/GmailClient.swift@@@if labels.contains("SPAM") { query.append(("includeSpamTrash", "true")) }@@@if true { query.append(("includeSpamTrash", "true")) }@@@inboxBulkReadDoesNotAskForSpamFolders
 Sources/InboxCore/GmailClient.swift@@@try await bulkModify(labels: ["SPAM", "UNREAD"], add: [], remove: ["UNREAD"])@@@try await bulkModify(labels: ["SPAM"], add: [], remove: ["UNREAD"])@@@markSpamReadListsUnreadSpamIncludingSpamFolderAndRemovesUnread
@@ -111,3 +110,5 @@ Sources/InboxCore/KeychainStore.swift@@@if vault.client == nil { vault.client = 
 Sources/InboxCore/KeychainStore.swift@@@if vault.accounts.isEmpty && vault.client == nil { try deleteItem(Self.bundleAccount); return }@@@if vault.accounts.isEmpty { try deleteItem(Self.bundleAccount); return }@@@theGoogleClientSurvivesRemovingEveryAccount
 Sources/InboxCore/KeychainStore.swift@@@return Vault(accounts: (try? JSONDecoder().decode([StoredAccount].self, from: data)) ?? [], client: nil)@@@return Vault()@@@aBundleWrittenAsABareAccountListStillLoads
 Sources/InboxCore/KeychainStore.swift@@@return vault.client ?? vault.accounts.first?.client@@@return vault.client@@@aBundleWrittenAsABareAccountListStillLoads
+
+Sources/InboxCore/KeychainStore.swift@@@for item in legacy { try? deleteItem(item.itemAccount) }@@@for _ in legacy { try? deleteItem(Self.bundleAccount) }@@@aLegacyItemAddedAfterTheVaultExistsMergesWithoutLosingTheVault

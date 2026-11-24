@@ -122,4 +122,22 @@ struct KeychainTests {
         #expect(try store.loadAll().map(\.refreshToken) == ["ra"])
         #expect(try store.loadClient() == OAuthClient(clientID: "cid", clientSecret: "sec"))
     }
+
+    @Test func aLegacyItemAddedAfterTheVaultExistsMergesWithoutLosingTheVault() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        try store.save(account("a@x.com", refresh: "ra"))
+        try store.addLegacyItem(account("b@x.com", refresh: "rb"))
+        #expect(Set(try store.loadAll().map(\.email)) == ["a@x.com", "b@x.com"])
+        #expect(try store.itemAccounts() == ["accounts"])
+        #expect(Set(try store.loadAll().map(\.refreshToken)) == ["ra", "rb"])
+    }
+
+    @Test func deletingFromAnEmptyStoreIsHarmless() throws {
+        let kc = try TempKeychain()
+        let store = kc.store()
+        try store.delete(email: "nobody@x.com")
+        #expect(try store.loadAll().isEmpty)
+        #expect(try store.itemAccounts().isEmpty)
+    }
 }
