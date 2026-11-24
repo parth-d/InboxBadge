@@ -90,7 +90,9 @@ final class FakeMailbox: @unchecked Sendable {
             return (jsonData(object), 200)
         }
         if path.hasSuffix("/messages") {
-            let list = unreadInbox.map { ["id": $0.id, "threadId": $0.thread] }
+            let required = Set(items.filter { $0.name == "labelIds" }.compactMap(\.value))
+            let matching = messages.filter { $0.labels.isSuperset(of: required) }
+            let list = matching.map { ["id": $0.id, "threadId": $0.thread] }
             return (jsonData(list.isEmpty ? [:] : ["messages": list]), 200)
         }
         if path.contains("/messages/") {

@@ -15,14 +15,24 @@ public actor AccountPoller {
 
     private let client: GmailClient
     private let listSize: Int
+    private var mode: InboxMode
     private var historyId: String?
     private var cache: [String: MessageMeta] = [:]
     private var last: InboxSnapshot?
     private var notified: [String] = []
 
-    public init(client: GmailClient, listSize: Int = 20) {
+    public init(client: GmailClient, listSize: Int = 20, mode: InboxMode = .inbox) {
         self.client = client
         self.listSize = listSize
+        self.mode = mode
+    }
+
+    public func setMode(_ newMode: InboxMode) {
+        guard newMode != mode else { return }
+        mode = newMode
+        historyId = nil
+        last = nil
+        cache = [:]
     }
 
     public func tick() async throws -> TickResult {
@@ -65,7 +75,7 @@ public actor AccountPoller {
         for ref in added where !notified.contains(ref.id) {
             let meta: MessageMeta?
             if let cached = cache[ref.id] { meta = cached } else { meta = try? await client.metadata(of: ref) }
-            guard let meta, meta.isUnreadInbox else { continue }
+            guard let meta, meta.qualifies(for: mode) else { continue }
             fresh.append(meta.thread)
             notified.append(ref.id)
         }
@@ -74,8 +84,9 @@ public actor AccountPoller {
     }
 
     private func takeSnapshot() async throws -> InboxSnapshot {
-        async let count = client.inboxUnreadCount()
-        let refs = try await client.unreadRefs(limit: listSize)
+        let mode = self.mode
+        async let count = client.unreadCount(mode: mode)
+        let refs = try await client.unreadRefs(limit: listSize, mode: mode)
         let client = self.client
         let missing = refs.filter { cache[$0.id] == nil }
         var fetched: [String: MessageMeta] = [:]

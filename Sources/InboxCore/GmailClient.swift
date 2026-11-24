@@ -101,10 +101,35 @@ public struct GmailClient: Sendable {
         return any ? .changed(historyId: latest, added: added) : .unchanged(historyId: latest)
     }
 
-    public func unreadRefs(limit: Int) async throws -> [MessageRef] {
-        let o = try await get("messages", [
-            ("labelIds", "INBOX"), ("labelIds", "UNREAD"), ("maxResults", String(max(limit * 3, 50))),
-        ])
+    private func unreadLabelQuery(_ mode: InboxMode) -> [(String, String)] {
+        var query: [(String, String)] = [("labelIds", "INBOX")]
+        if mode == .primary { query.append(("labelIds", "CATEGORY_PERSONAL")) }
+        query.append(("labelIds", "UNREAD"))
+        return query
+    }
+
+    public func unreadCount(mode: InboxMode) async throws -> Int {
+        switch mode {
+        case .inbox: return try await inboxUnreadCount()
+        case .primary:
+            var threads = Set<String>()
+            var pageToken: String?
+            for _ in 0..<20 {
+                var query = unreadLabelQuery(.primary) + [("maxResults", "500")]
+                if let pageToken { query.append(("pageToken", pageToken)) }
+                let o = try await get("messages", query)
+                for m in o["messages"] as? [[String: Any]] ?? [] {
+                    if let thread = m["threadId"] as? String { threads.insert(thread) }
+                }
+                pageToken = o["nextPageToken"] as? String
+                if pageToken == nil { break }
+            }
+            return threads.count
+        }
+    }
+
+    public func unreadRefs(limit: Int, mode: InboxMode = .inbox) async throws -> [MessageRef] {
+        let o = try await get("messages", unreadLabelQuery(mode) + [("maxResults", String(max(limit * 3, 50)))])
         var seen = Set<String>()
         var refs: [MessageRef] = []
         for m in o["messages"] as? [[String: Any]] ?? [] {

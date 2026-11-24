@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import InboxCore
 
 struct SettingsView: View {
     let model: AppModel
@@ -12,6 +13,12 @@ struct SettingsView: View {
                     HStack {
                         Text(account.email)
                         Spacer()
+                        Picker("Count", selection: Binding(get: { account.mode }, set: { model.setMode($0, for: account.email) })) {
+                            Text("Whole inbox").tag(InboxMode.inbox)
+                            Text("Primary tab").tag(InboxMode.primary)
+                        }
+                        .labelsHidden()
+                        .frame(width: 130)
                         Button("Remove", role: .destructive) { Task { await model.removeAccount(account.email) } }
                     }
                 }
@@ -24,6 +31,7 @@ struct SettingsView: View {
                         Button("Add with another client JSON…") { model.showImporter = true }.disabled(model.isSigningIn)
                     }
                 }
+                Text("Primary tab needs Gmail's inbox tabs turned on for that account.").font(.caption).foregroundStyle(.secondary)
                 if model.isSigningIn {
                     HStack {
                         Text("Waiting for Google in your browser…").foregroundStyle(.secondary)
@@ -35,7 +43,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 300)
+        .frame(width: 520, height: 380)
         .fileImporter(isPresented: Binding(get: { model.showImporter }, set: { model.showImporter = $0 }), allowedContentTypes: [.json]) { result in
             guard case .success(let url) = result else { return }
             let scoped = url.startAccessingSecurityScopedResource()

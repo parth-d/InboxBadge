@@ -17,6 +17,7 @@ struct AccountView: Identifiable, Equatable {
     var unread = 0
     var threads: [UnreadThread] = []
     var status: AccountStatus = .starting
+    var mode: InboxMode = .inbox
     var id: String { email }
 }
 
@@ -110,6 +111,23 @@ final class AppModel {
         await pokeAll()
     }
 
+    func setMode(_ mode: InboxMode, for email: String) {
+        guard let runtime = runtimes[email], let i = accounts.firstIndex(where: { $0.email == email }),
+              accounts[i].mode != mode else { return }
+        accounts[i].mode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: Self.modeKey(email))
+        Task {
+            await runtime.poller.setMode(mode)
+            await runtime.loop.poke()
+        }
+    }
+
+    private nonisolated static func modeKey(_ email: String) -> String { "mode.\(email)" }
+
+    private nonisolated static func savedMode(for email: String) -> InboxMode {
+        UserDefaults.standard.string(forKey: modeKey(email)).flatMap(InboxMode.init(rawValue:)) ?? .inbox
+    }
+
     func openSettings() {
         settingsWindow.show(model: self)
     }
@@ -168,7 +186,8 @@ final class AppModel {
         storedClient = account.client
         let tokens = TokenProvider(client: account.client, refreshToken: account.refreshToken, transport: transport)
         let client = GmailClient(tokens: tokens, transport: transport)
-        let poller = AccountPoller(client: client)
+        let mode = Self.savedMode(for: account.email)
+        let poller = AccountPoller(client: client, mode: mode)
         let email = account.email
         let loop = PollLoop(policy: EnergyPolicy(), environment: environment) { [weak self] in
             do {
@@ -182,7 +201,7 @@ final class AppModel {
             }
         }
         runtimes[email] = Runtime(client: client, poller: poller, loop: loop)
-        if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email)) }
+        if !accounts.contains(where: { $0.email == email }) { accounts.append(AccountView(email: email, mode: mode)) }
         Task { await loop.start() }
     }
 
