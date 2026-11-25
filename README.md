@@ -28,7 +28,7 @@ Gmail's API needs an OAuth client that you create yourself, so your mail never g
 1. In the [Google Cloud console](https://console.cloud.google.com) create a project, enable the **Gmail API**, and do **not** link a billing account.
 2. Open **Google Auth Platform**: set the audience to **External**, add the scope `https://www.googleapis.com/auth/gmail.modify` (read, mark read, move to Trash; it cannot permanently delete), and while the app is in **Testing** add every Gmail and Workspace address you want to use as a **test user**.
 3. Create an OAuth client of type **Desktop app** and download its JSON file.
-4. In InboxBadge open **Settings → Add account…**, choose that JSON file and approve access in the browser. Google shows "Google hasn't verified this app" for personal projects; choose **Advanced → Go to InboxBadge**.
+4. In InboxBadge open **Settings → Set up Google access…** once and choose that JSON file; InboxBadge keeps it in the Keychain and uses it for every account. Then **Add account…** opens Google in your browser to approve access (repeat for each account). Give an account a label and arrange the order in Settings. Google shows "Google hasn't verified this app" for personal projects; choose **Advanced → Go to InboxBadge**.
 
 Testing status expires every sign-in after 7 days. To stop that, publish the project to **In production** (Google Auth Platform → Audience). An unverified production app is limited to 100 users, which is plenty for personal use; it needs a homepage and a privacy-policy URL (see `docs/`). A Google Workspace admin may block third-party apps; then that account cannot be added.
 
