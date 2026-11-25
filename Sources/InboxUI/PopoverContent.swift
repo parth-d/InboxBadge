@@ -12,7 +12,21 @@ public struct PopoverContent: View {
         self.now = now
     }
 
+    public static let maxCardsHeight: CGFloat = 560
+
     public var body: some View {
+        VStack(spacing: 10) {
+            CappedScroll(maxHeight: Self.maxCardsHeight) {
+                cards.hidden()
+                ScrollView(.vertical) { cards }
+            }
+            FooterBar(actions: actions)
+        }
+        .padding(12)
+        .frame(width: 380)
+    }
+
+    private var cards: some View {
         VStack(spacing: 10) {
             if accounts.isEmpty {
                 VStack(spacing: 4) {
@@ -25,10 +39,23 @@ public struct PopoverContent: View {
             } else {
                 ForEach(accounts) { AccountCard(account: $0, actions: actions, now: now) }
             }
-            FooterBar(actions: actions)
         }
-        .padding(12)
-        .frame(width: 380)
+    }
+}
+
+private struct CappedScroll: Layout {
+    let maxHeight: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let measure = subviews.first else { return .zero }
+        let content = measure.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil))
+        return CGSize(width: proposal.width ?? content.width, height: min(content.height, maxHeight))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        subviews[0].place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: nil))
+        subviews[1].place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
     }
 }
 

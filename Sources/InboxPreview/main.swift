@@ -41,10 +41,17 @@ let quiet = AccountView(email: "side@example.com", label: "Side projects", unrea
     print("wrote \(path)")
 }
 
+let many = (0..<4).map { i in
+    AccountView(email: "acct\(i)@example.com", label: "Account \(i)", unread: 40,
+                threads: (0..<20).map { thread($0 + i * 100, "Sender \($0) <s@example.org>", "Subject line number \($0)", ageSeconds: Double($0) * 900) },
+                status: .ok, spam: SpamSummary(unread: 3, total: 9))
+}
+
 let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "."
 _ = NSApplication.shared
 MainActor.assumeIsolated {
     render(.light, accounts: [personal, work, expired, quiet], to: "\(outDir)/popover-light.png")
     render(.dark, accounts: [personal, work, expired, quiet], to: "\(outDir)/popover-dark.png")
     render(.light, accounts: [], to: "\(outDir)/popover-empty.png")
+    render(.light, accounts: many, to: "\(outDir)/popover-many.png")
 }
